@@ -402,7 +402,7 @@ aviationweathercheck () {
   fi
   echo -e "${CGreen}/${CRed}$icaoairportcode Flight Rules${CClear}${CGreen}\________________________________________________${CClear}"
   echo ""
-  echo -e ${CGreen}Current Conditions: ${CCyan}$FlightRules
+  echo -e "${InvGreen} ${CClear}${CGreen} Current Conditions: ${CCyan}$FlightRules"
   echo ""
   echo -e "${CGreen} __________${CClear}"
   echo -e "${CGreen}/${CRed}$icaoairportcode METAR${CClear}${CGreen}\_______________________________________________________${CClear}"
