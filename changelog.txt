@@ -1,0 +1,2 @@
+v0.1b   - (February 8, 2023)
+        - RELEASE: Initial release to the masses... enjoy, while I work out any last minute bugs before a release candidate is made available. 
