@@ -1,2 +1,3 @@
 # WXMON
-Asus-Merlin Weather Monitor
+
+WXMON v0.1b is a shell script that provides current localized weather information directly from weather.gov and displays this information on screen in an SSH dashboard window. Options to expand on the weather forecast to give you more detail about the upcoming forecast. Also, capabilities to view aviation-related METAR and TAF forecasts are included. This component was originally added to my PWRMON script, which monitors your Tesla Powerwall batteries, solar panels, grid and home electrical usage. Having a weather component was useful in determining if upcoming days would yield good solar production days. Understanding that many won't be able to make use of this feature, I decided to break this out into its own standalone script -- WXMON.
