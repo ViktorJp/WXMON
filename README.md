@@ -1,3 +1,5 @@
 # WXMON
 
 WXMON v0.1b is a shell script that provides current localized weather information directly from weather.gov and displays this information on screen in an SSH dashboard window. Options to expand on the weather forecast to give you more detail about the upcoming forecast. Also, capabilities to view aviation-related METAR and TAF forecasts are included. This component was originally added to my PWRMON script, which monitors your Tesla Powerwall batteries, solar panels, grid and home electrical usage. Having a weather component was useful in determining if upcoming days would yield good solar production days. Understanding that many won't be able to make use of this feature, I decided to break this out into its own standalone script -- WXMON.
+
+Please note, in order to pull aviation weather data through a public API, you must sign up for an account at https://avwx.rest and grab an API access token. It will literally take you 1 minute or less to do this.  Once you have your automatically generated token code, copy that into WXMON's config section that asks for this token. Once the token is in place, it will be able to pull this data to display on screen.
