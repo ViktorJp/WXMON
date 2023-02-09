@@ -1,0 +1,8 @@
+Upcoming Planned Enhancements
+-----------------------------
+
+TO-DO:
+* Add weather alerts for major regional weather events
+* Possibly add text alerts for weather alerts that affect the routers immediate vicinity
+
+DONE:
