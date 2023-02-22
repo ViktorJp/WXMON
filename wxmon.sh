@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# WXMON 0.1b - Asus-Merlin Weather Monitor by Viktor Jaep, 2023
+# WXMON 0.2b - Asus-Merlin Weather Monitor by Viktor Jaep, 2023
 #
 # KILLMON is a shell script that provides current localized weather information directly from weather.gov and displays
 # this information on screen in an SSH dashboard window. Options to expand on the weather forecast to give you more
@@ -31,17 +31,19 @@
 # -------------------------------------------------------------------------------------------------------------------------
 # System Variables (Do not change beyond this point or this may change the programs ability to function correctly)
 # -------------------------------------------------------------------------------------------------------------------------
-Version=0.1b
+Version=0.2b
 Beta=1
 LOGFILE="/jffs/addons/wxmon.d/wxmon.log"           # Logfile path/name that captures important date/time events - change
 APPPATH="/jffs/scripts/wxmon.sh"                   # Path to the location of wxmon.sh
 CFGPATH="/jffs/addons/wxmon.d/wxmon.cfg"           # Path to the location of wxmon.cfg
 DLVERPATH="/jffs/addons/wxmon.d/version.txt"       # Path to downloaded version from the source repository
-WANwxforecast="/jffs/addons/wxmon.d/WANwx.txt"     # Path to weather forecast JSON extract used for weather displays
+WANwxforecast="/jffs/addons/wxmon.d/WANwx.txt"     # Path to US-only weather forecast JSON extract used for weather displays
+WANwx2forecast="/jffs/addons/wxmon.d/WANwx2.txt"   # Path to global weather forecast JSON extract used for weather displays
 Interval=360
 FromUI=0
+UnitMeasure=1
+WXService=1
 aviationwx="Disabled"
-avwxapitoken="N/A"
 icaoairportcode="KLAX"
 ProgPref=0
 AVWXPage=0
@@ -357,6 +359,128 @@ echo ""
 }
 
 # -------------------------------------------------------------------------------------------------------------------------
+# weathercheck is a function that downloads the latest weather for your WAN IP location
+worldweathercheck () {
+
+  # Get the WAN interface in order to check for the public WAN IP address
+  WANIFNAME=$(get_wan_setting ifname)
+  WANIP=$(curl --silent --fail --interface $WANIFNAME --request GET --url https://ipv4.icanhazip.com)
+  WANCITY=$(curl --silent --retry 3 --request GET --url http://ip-api.com/json/$WANIP | jq --raw-output .city)
+
+  # Get the latitute/longitude of the public WAN IP address
+  WANlat=$(curl --silent --retry 3 --request GET --url http://ip-api.com/json/$WANIP | jq --raw-output .lat)
+  WANlon=$(curl --silent --retry 3 --request GET --url http://ip-api.com/json/$WANIP | jq --raw-output .lon)
+
+  if [ "$UnitMeasure" == "0" ]; then
+    tempunits="fahrenheit"
+    tempunitsabbr="F"
+    windunits="mph"
+  elif [ "$UnitMeasure" == "1" ]; then
+    tempunits="celsius"
+    tempunitsabbr="C"
+    windunits="kmh"
+  fi
+
+  # Extract weather based on lat/long to a file
+  curl --silent --retry 3 --request GET --url 'https://api.open-meteo.com/v1/forecast?latitude='$WANlat'&longitude='$WANlon'&temperature_unit='$tempunits'&windspeed_unit='$windunits'&daily=weathercode,temperature_2m_max,temperature_2m_min,winddirection_10m_dominant,windspeed_10m_max,windgusts_10m_max&past_days=0&timezone=auto' | jq > $WANwx2forecast
+
+  # Extract the weather JSON to a text file in order to query from it with JQ
+  LINES=$(cat $WANwx2forecast | wc -l) #Check to see how many lines are in this file
+
+  if [ $LINES -eq 0 ] #If there are no lines, error out
+  then
+    echo -e "\n${CRed} [Error: Unable to download weather data. Try again later...]\n${CClear}"
+    echo -e "$(date) - WXMON ----------> ERROR: Unable to fetch weather data. May be a temporary issue. Try again later." >> $LOGFILE
+    sleep 3
+    exit 0
+  else
+    # Display the city, lat and long
+    #WANCITY="Your City"
+    #WANlat=32.3321
+    #WANlon=-64.7660
+    clear
+    logo
+    if [ "$UpdateNotify" != "0" ]; then
+      echo -e "${CRed}  $UpdateNotify${CClear}"
+      echo -e "${CGreen} ________${CClear}"
+    else
+      echo -e "${CGreen} ________${CClear}"
+    fi
+    echo -e "${CGreen}/${CRed}Location${CClear}${CGreen}\_________________________________________________________${CClear}"
+    echo ""
+    echo -e "${InvGreen} ${CClear}${CGreen} Location: ${CCyan}$WANCITY ${CGreen}-- Latitude: ${CCyan}$WANlat ${CGreen}-- Longitude: ${CCyan}$WANlon"
+    echo -e "${CGreen} ________${CClear}"
+    echo -e "${CGreen}/${CRed}Forecast${CClear}${CGreen}\_________________________________________________________${CClear}"
+    echo ""
+
+    # Loop through the forecasts and display them
+    i=2
+    while [ $i -ne 9 ]
+      do
+
+        WANwxDay=$(cat $WANwx2forecast| jq .daily.time | tr -d '[]", ' | sed -n $i'p')
+        WANwxTempMin=$(cat $WANwx2forecast | jq .daily.temperature_2m_min | tr -d '[]", ' | sed -n $i'p' | cut -d . -f 1)
+        WANwxTempMax=$(cat $WANwx2forecast | jq .daily.temperature_2m_max | tr -d '[]", ' | sed -n $i'p' | cut -d . -f 1)
+        WANwxWind=$(cat $WANwx2forecast | jq .daily.windspeed_10m_max | tr -d '[]", ' | sed -n $i'p')
+        WANwxWindGust=$(cat $WANwx2forecast | jq .daily.windgusts_10m_max | tr -d '[]", ' | sed -n $i'p')
+        WANwxWindDir=$(cat $WANwx2forecast | jq .daily.winddirection_10m_dominant | tr -d '[]", ' | sed -n $i'p')
+        WANwxCode=$(cat $WANwx2forecast | jq .daily.weathercode | tr -d '[]", ' | sed -n $i'p')
+
+        if [ $WANwxWindDir -ge 337 ] || [ $WANwxWindDir -le 22 ]; then WANwxWindCompass="N"
+          elif [ $WANwxWindDir -ge 293 ] && [ $WANwxWindDir -le 336 ]; then WANwxWindCompass="NW"
+          elif [ $WANwxWindDir -ge 248 ] && [ $WANwxWindDir -le 292 ]; then WANwxWindCompass="W"
+          elif [ $WANwxWindDir -ge 203 ] && [ $WANwxWindDir -le 247 ]; then WANwxWindCompass="SW"
+          elif [ $WANwxWindDir -ge 158 ] && [ $WANwxWindDir -le 202 ]; then WANwxWindCompass="S"
+          elif [ $WANwxWindDir -ge 113 ] && [ $WANwxWindDir -le 157 ]; then WANwxWindCompass="SE"
+          elif [ $WANwxWindDir -ge 68 ] && [ $WANwxWindDir -le 112 ]; then WANwxWindCompass="E"
+          elif [ $WANwxWindDir -ge 23 ] && [ $WANwxWindDir -le 67 ]; then WANwxWindCompass="NE"
+        fi
+
+    echo -e "${InvGreen} ${CClear}${CGreen} Day: ${CCyan}$WANwxDay ${CGreen}-- Max Wind: ${CCyan}$WANwxWind $windunits from $WANwxWindCompass ${CGreen}Gusts: ${CCyan}$WANwxWindGust $windunits"
+
+    #Decipher weathercodes
+    if [ "$WANwxCode" == "0" ]; then WANwxCodeShort="Clear Skies"
+      elif [ "$WANwxCode" == "1" ]; then WANwxCodeShort="Mainly Clear"
+      elif [ "$WANwxCode" == "2" ]; then WANwxCodeShort="Partly Cloudy"
+      elif [ "$WANwxCode" == "3" ]; then WANwxCodeShort="Overcast"
+      elif [ "$WANwxCode" == "45" ]; then WANwxCodeShort="Fog"
+      elif [ "$WANwxCode" == "48" ]; then WANwxCodeShort="Depositing Rime Fog"
+      elif [ "$WANwxCode" == "51" ]; then WANwxCodeShort="Light Drizzle"
+      elif [ "$WANwxCode" == "53" ]; then WANwxCodeShort="Moderate Drizzle"
+      elif [ "$WANwxCode" == "55" ]; then WANwxCodeShort="Dense Drizzle"
+      elif [ "$WANwxCode" == "56" ]; then WANwxCodeShort="Light Freezing Drizzle"
+      elif [ "$WANwxCode" == "57" ]; then WANwxCodeShort="Dense Freezing Drizzle"
+      elif [ "$WANwxCode" == "61" ]; then WANwxCodeShort="Slight Rain"
+      elif [ "$WANwxCode" == "63" ]; then WANwxCodeShort="Moderate Rain"
+      elif [ "$WANwxCode" == "65" ]; then WANwxCodeShort="Heavy Rain"
+      elif [ "$WANwxCode" == "66" ]; then WANwxCodeShort="Light Freezing Rain"
+      elif [ "$WANwxCode" == "67" ]; then WANwxCodeShort="Heavy Freezing Rain"
+      elif [ "$WANwxCode" == "71" ]; then WANwxCodeShort="Slight Snow Fall"
+      elif [ "$WANwxCode" == "73" ]; then WANwxCodeShort="Moderate Snow Fall"
+      elif [ "$WANwxCode" == "75" ]; then WANwxCodeShort="Heavy Snow Fall"
+      elif [ "$WANwxCode" == "77" ]; then WANwxCodeShort="Snow Grains"
+      elif [ "$WANwxCode" == "80" ]; then WANwxCodeShort="Slight Rain Showers"
+      elif [ "$WANwxCode" == "81" ]; then WANwxCodeShort="Moderate Rain Showers"
+      elif [ "$WANwxCode" == "82" ]; then WANwxCodeShort="Violent Rain Showers"
+      elif [ "$WANwxCode" == "85" ]; then WANwxCodeShort="Slight Snow Showers"
+      elif [ "$WANwxCode" == "86" ]; then WANwxCodeShort="Heavy Snow Showers"
+      elif [ "$WANwxCode" == "95" ]; then WANwxCodeShort="Thunderstorms"
+      elif [ "$WANwxCode" == "96" ]; then WANwxCodeShort="Thunderstorms with Light Hail"
+      elif [ "$WANwxCode" == "99" ]; then WANwxCodeShort="Thunderstorms with Heavy Hail"
+    else
+      WANwxCodeShort="Conditions Unknown"
+    fi
+
+    echo -e "${InvGreen} ${CClear}${CGreen} Conditions: ${CCyan}$WANwxCodeShort ${CGreen}--Temp Lo: ${CCyan}$WANwxTempMin$tempunitsabbr ${CGreen}Hi: ${CCyan}$WANwxTempMax$tempunitsabbr"
+    echo ""
+    i=$(($i+1))
+
+  done
+
+fi
+}
+
+# -------------------------------------------------------------------------------------------------------------------------
 # aviationweathercheck is a function that displays the latest aviation weather forecast for your ICAO airport code
 aviationweathercheck () {
 
@@ -371,11 +495,21 @@ aviationweathercheck () {
     return
   fi
 
-  curl --silent --retry 3 --request GET --url https://avwx.rest/api/metar/$icaoairportcode --header 'Authorization: BEARER '$avwxapitoken | jq --raw-output '.flight_rules,.sanitized'> /jffs/addons/wxmon.d/wxmetar.txt
+  echo ""
+  printf "\r${InvYellow} ${CClear}${CYellow} [Downloading WX Feeds]..."
+
+  #Delete any current weather files
+  rm /jffs/addons/wxmon.d/wxmetar.txt 2>&1
+  rm /jffs/addons/wxmon.d/wxtaf.txt 2>&1
+
+  #curl --silent --retry 3 --request GET --url https://avwx.rest/api/metar/$icaoairportcode --header 'Authorization: BEARER '$avwxapitoken | jq --raw-output '.flight_rules,.sanitized'> /jffs/addons/wxmon.d/wxmetar.txt
+  curl --silent --retry 3 --request GET --url 'https://aviationweather.gov/adds/dataserver_current/httpparam?dataSource=metars&requestType=retrieve&format=xml&hoursBeforeNow=3&mostRecent=true&stationString='$icaoairportcode > /jffs/addons/wxmon.d/wxmetar.txt
+
+  #sed -n 's:.*<id>\(.*\)</id>.*:\1:p'
 
   if [ -f /jffs/addons/wxmon.d/wxmetar.txt ]; then
-    FlightRules=$(cat /jffs/addons/wxmon.d/wxmetar.txt | sed -n '1p' | cut -d '"' -f2) 2>&1
-    CurrMETAR=$(cat /jffs/addons/wxmon.d/wxmetar.txt | sed -n '2p' | cut -d '"' -f2) 2>&1
+    FlightRules=$(cat /jffs/addons/wxmon.d/wxmetar.txt | sed -n 's:.*<flight_category>\(.*\)</flight_category>.*:\1:p') 2>&1
+    CurrMETAR=$(cat /jffs/addons/wxmon.d/wxmetar.txt | sed -n 's:.*<raw_text>\(.*\)</raw_text>.*:\1:p') 2>&1
     CurrMETARTrim=$(echo $CurrMETAR | sed -e 's/.\{57\} /&\n/g')
     if [ "$FlightRules" == "Null" ]; then FlightRules="Unknown - Error getting weather"; fi
     if [ "$CurrMETAR" == "Null" ]; then CurrMETARTrim="Unknown - Error getting weather"; fi
@@ -384,21 +518,24 @@ aviationweathercheck () {
     CurrMETARTrim="Unknown - Error getting weather"
   fi
 
-  curl --silent --retry 3 --request GET --url https://avwx.rest/api/taf/$icaoairportcode --header 'Authorization: BEARER '$avwxapitoken | jq --raw-output '.raw'> /jffs/addons/wxmon.d/wxtaf.txt
+  #curl --silent --retry 3 --request GET --url https://avwx.rest/api/taf/$icaoairportcode --header 'Authorization: BEARER '$avwxapitoken | jq --raw-output '.raw'> /jffs/addons/wxmon.d/wxtaf.txt
+  curl --silent --retry 3 --request GET --url 'https://aviationweather.gov/adds/dataserver_current/httpparam?datasource=tafs&requestType=retrieve&format=xml&mostRecentForEachStation=true&hoursBeforeNow=2&stationString='$icaoairportcode > /jffs/addons/wxmon.d/wxtaf.txt
 
   if [ -f /jffs/addons/wxmon.d/wxtaf.txt ]; then
-    CurrTAF=$(cat /jffs/addons/wxmon.d/wxtaf.txt | sed -n '1p' | cut -d '"' -f2) 2>&1
+    CurrTAF=$(cat /jffs/addons/wxmon.d/wxtaf.txt | sed -n 's:.*<raw_text>\(.*\)</raw_text>.*:\1:p') 2>&1
     CurrTAFTrim=$(echo $CurrTAF | sed -e 's/.\{57\} /&\n/g')
     if [ "$CurrTAF" == "Null" ]; then CurrTAFTrim="Unknown - Error getting weather"; fi
   else
     CurrTAFTrim="Unknown - Error getting weather"
   fi
 
+  printf "\r${CClear}"
+
   if [ "$UpdateNotify" != "0" ]; then
     echo -e "${CRed}  $UpdateNotify${CClear}"
-    echo -e "${CGreen} _________________${CClear}"
+    echo -e "${CGreen} _________________${CClear}          "
   else
-    echo -e "${CGreen} _________________${CClear}"
+    echo -e "${CGreen} _________________${CClear}          "
   fi
   echo -e "${CGreen}/${CRed}$icaoairportcode Flight Rules${CClear}${CGreen}\________________________________________________${CClear}"
   echo ""
@@ -415,7 +552,7 @@ aviationweathercheck () {
   echo -e "${CCyan}$CurrTAFTrim"
   echo ""
   echo ""
-  echo -e "${CRed}(R)${CGreen}eturn to condensed forecast?"
+  echo -e "${CRed}(R)${CGreen}eturn to standard forecast?"
   echo ""
 
 }
@@ -470,15 +607,19 @@ vconfig () {
       echo -e "${CGreen}Configuration Utility Options"
       echo -e "${CGreen}----------------------------------------------------------------"
       echo -e "${InvDkGray}${CWhite} 1 ${CClear}${CCyan}: Refresh Interval (min)      :"${CGreen}$Interval
-      echo -e "${InvDkGray}${CWhite} 2 ${CClear}${CCyan}: Enable Aviation WX?         :"${CGreen}$aviationwx
+      if [ "$UnitMeasure" == "0" ]; then UnitMeasureDisplay="Imperial"
+      elif [ "$UnitMeasure" == "1" ]; then UnitMeasureDisplay="Metric"; fi
+      echo -e "${InvDkGray}${CWhite} 2 ${CClear}${CCyan}: Units of Measurement?       :"${CGreen}$UnitMeasureDisplay
+      if [ "$WXService" == "0" ]; then WXServiceDisplay="US-Based"
+      elif [ "$WXService" == "1" ]; then WXServiceDisplay="Global"; fi
+      echo -e "${InvDkGray}${CWhite} 3 ${CClear}${CCyan}: Weather Service?            :"${CGreen}$WXServiceDisplay
+      echo -e "${InvDkGray}${CWhite} 4 ${CClear}${CCyan}: Enable Aviation WX?         :"${CGreen}$aviationwx
       if [ "$aviationwx" == "Enabled" ]; then
-        echo -e "${InvDkGray}${CWhite} |-${CClear}${CCyan}-  AVWX API Token             :"${CGreen}$avwxapitoken
         echo -e "${InvDkGray}${CWhite} |-${CClear}${CCyan}-  ICAO Airport Code          :"${CGreen}$icaoairportcode
       else
-        echo -e "${InvDkGray}${CWhite} | ${CClear}${CDkGray}-  AVWX API Token             :${CDkGray}N/A"
         echo -e "${InvDkGray}${CWhite} | ${CClear}${CDkGray}-  ICAO Airport Code          :${CDkGray}N/A"
       fi
-      echo -en "${InvDkGray}${CWhite} 3 ${CClear}${CCyan}: Progress Bar Preference?    :"${CGreen}
+      echo -en "${InvDkGray}${CWhite} 5 ${CClear}${CCyan}: Progress Bar Preference?    :"${CGreen}
       if [ "$ProgPref" == "0" ]; then
         printf "Standard"; printf "%s\n";
       else printf "Minimalist"; printf "%s\n"; fi
@@ -503,10 +644,35 @@ vconfig () {
 
             2) # -----------------------------------------------------------------------------------------
               echo ""
-              echo -e "${CCyan}2. Would you like to enable aviation weather METAR and TAF updates?"
-              echo -e "${CCyan}This will require you to create a free account on https://avwx.rest/"
-              echo -e "${CCyan}in order to enter an API token below. This free API token will grant"
-              echo -e "${CCyan}access to the latest aviation weather for the aiport of your choice."
+              echo -e "${CCyan}2. What is your preference for the Unit of Measure? Please note: this will"
+              echo -e "${CCyan}only apply for the Global Weather Service option. Choosing the US-based"
+              echo -e "${CCyan}Weather Service will default to Imperial measurements."
+              echo -e "${CCyan}(0 = Imperial - F/Mph) or (1 = Metric - C/Kmh)?"
+              echo -e "${CYellow}(Default = 1)${CClear}"
+              read -p 'Unit of Measure: ' UnitMeasure1
+              UnitMeasure2=$(echo $UnitMeasure1 | tr '[0-1]')
+              if [ -z "$UnitMeasure1" ]; then UnitMeasure=0; else UnitMeasure=$UnitMeasure2; fi
+            ;;
+
+            3) # -----------------------------------------------------------------------------------------
+              echo ""
+              echo -e "${CCyan}3. What is your choice of Weather Service? You can pick between"
+              echo -e "${CYellow}US-only and Global.${CCyan}  Please note: with US-only, you get a 3-day"
+              echo -e "${CCyan}forecast, however it provides more content, provides for a more easily"
+              echo -e "${CCyan}readable and expanded forecast, but only works for US-based locations. The"
+              echo -e "${CCyan}Global option should provide for weather conditions across the globe, and"
+              echo -e "${CCyan}will give you a 7-day forecast, does not provide you with an expanded"
+              echo -e "${CCyan}forecast, and its information is more limited."
+              echo -e "${CCyan}(0 = US-only) or (1 = Global)?"
+              echo -e "${CYellow}(Default = 1)${CClear}"
+              read -p 'Weather Service: ' WXService1
+              WXService2=$(echo $WXService1 | tr '[0-1]')
+              if [ -z "$WXService1" ]; then WXService=0; else WXService=$WXService2; fi
+            ;;
+
+            4) # -----------------------------------------------------------------------------------------
+              echo ""
+              echo -e "${CCyan}4. Would you like to enable aviation weather METAR and TAF updates?"
               echo -e "${CYellow}(Aviation Weather Enabled Default = No)${CClear}"
               if promptyn "Enable Aviation Weather? (y/n): "; then
                 aviationwx="Enabled"
@@ -514,10 +680,6 @@ vconfig () {
                 echo ""
                 echo -e "${CGreen}NOTE: Press ENTER at the prompt to use your previously"
                 echo -e "${CGreen}saved entry.${CClear}"
-                echo ""
-                read -p 'Enter your AVWX API key: ' avwxapitoken1
-                if [ ! -z "$avwxapitoken1" ]; then avwxapitoken=$avwxapitoken1; fi
-                echo -e "${CGreen}Using: $avwxapitoken${CClear}"
                 echo ""
                 read -p 'Enter your ICAO Airport Code (ex: KLAX): ' icaoairportcode1
                 if [ ! -z "$icaoairportcode1" ]; then icaoairportcode=$icaoairportcode1; fi
@@ -528,9 +690,9 @@ vconfig () {
               fi
             ;;
 
-            3) # -----------------------------------------------------------------------------------------
+            5) # -----------------------------------------------------------------------------------------
               echo ""
-              echo -e "${CCyan}3. What is your preference for the Interval Progress Bar?"
+              echo -e "${CCyan}5. What is your preference for the Interval Progress Bar?"
               echo -e "${CCyan}(0 = Standard) or (1 = Minimalist)?"
               echo -e "${CYellow}(Default = 0)${CClear}"
               read -p 'Progress Bar Pref: ' ProgPref1
@@ -541,8 +703,9 @@ vconfig () {
             [Ss]) # -----------------------------------------------------------------------------------------
               echo ""
               { echo 'Interval='$Interval
+                echo 'UnitMeasure='$UnitMeasure
+                echo 'WXService='$WXService
                 echo 'aviationwx="'"$aviationwx"'"'
-                echo 'avwxapitoken="'"$avwxapitoken"'"'
                 echo 'icaoairportcode="'"$icaoairportcode"'"'
                 echo 'ProgPref='$ProgPref
               } > $CFGPATH
@@ -563,8 +726,9 @@ vconfig () {
   else
       #Create a new config file with default values to get it to a basic running state
       { echo 'Interval=360'
+        echo 'UnitMeasure=1'
+        echo 'WXService=1'
         echo 'aviationwx="Disabled"'
-        echo 'avwxapitoken="N/A"'
         echo 'icaoairportcode="KLAX"'
         echo 'ProgPref=0'
       } > $CFGPATH
@@ -1077,7 +1241,11 @@ while true; do
     aviationweathercheck
   else
     clear
-    weathercheck
+    if [ $WXService == "0" ]; then
+      weathercheck
+    elif [ $WXService == "1" ]; then
+      worldweathercheck
+    fi
   fi
 
   i=0
@@ -1097,12 +1265,13 @@ while true; do
 
       if [ $key_press ]; then
           case $key_press in
-              [Ss]) FromUI=1; (vsetup); source $CFGPATH; echo -e "${CGreen}[Returning to the Main UI momentarily]                                   "; sleep 1; FromUI=0; IntervalMins=$((Interval * 60)); clear; logo; echo ""; weathercheck;;
+              [Ss]) FromUI=1; (vsetup); source $CFGPATH; echo -e "${CGreen}[Returning to the Main UI momentarily]                                   "; sleep 1; FromUI=0; IntervalMins=$((Interval * 60)); clear; logo; echo ""; if [ $WXService == "0" ]; then weathercheck; elif [ $WXService == "1" ]; then worldweathercheck; fi;;
               [Aa]) AVWXPage=1; aviationweathercheck;;
               [Mm]) weathercheckext;;
-              [Ff]) if [ "$AVWXPage" == "0" ]; then weathercheck; else aviationweathercheck; fi;;
-              [Rr]) AVWXPage=0; weathercheck;;
+              [Ff]) if [ "$AVWXPage" == "0" ]; then if [ $WXService == "0" ]; then weathercheck; elif [ $WXService == "1" ]; then worldweathercheck; fi; else aviationweathercheck; fi;;
+              [Rr]) AVWXPage=0; if [ $WXService == "0" ]; then weathercheck; elif [ $WXService == "1" ]; then worldweathercheck; fi;;
               [Ee]) echo -e "${CClear}"; exit 0;;
+              [Ww]) worldweathercheck;;
           esac
       fi
   done
