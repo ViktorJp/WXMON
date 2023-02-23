@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# WXMON 0.2b - Asus-Merlin Weather Monitor by Viktor Jaep, 2023
+# WXMON 0.3b - Asus-Merlin Weather Monitor by Viktor Jaep, 2023
 #
 # KILLMON is a shell script that provides current localized weather information directly from weather.gov and displays
 # this information on screen in an SSH dashboard window. Options to expand on the weather forecast to give you more
@@ -31,7 +31,7 @@
 # -------------------------------------------------------------------------------------------------------------------------
 # System Variables (Do not change beyond this point or this may change the programs ability to function correctly)
 # -------------------------------------------------------------------------------------------------------------------------
-Version=0.2b
+Version=0.3b
 Beta=1
 LOGFILE="/jffs/addons/wxmon.d/wxmon.log"           # Logfile path/name that captures important date/time events - change
 APPPATH="/jffs/scripts/wxmon.sh"                   # Path to the location of wxmon.sh
@@ -250,40 +250,51 @@ get_wan_setting() {
 # weathercheck is a function that downloads the latest weather for your WAN IP location
 weathercheck () {
 
-  # Get the WAN interface in order to check for the public WAN IP address
-  WANIFNAME=$(get_wan_setting ifname)
-  WANIP=$(curl --silent --fail --interface $WANIFNAME --request GET --url https://ipv4.icanhazip.com)
-  WANCITY=$(curl --silent --retry 3 --request GET --url http://ip-api.com/json/$WANIP | jq --raw-output .city)
-
-  # Get the latitute/longitude of the public WAN IP address
-  WANlat=$(curl --silent --retry 3 --request GET --url http://ip-api.com/json/$WANIP | jq --raw-output .lat)
-  WANlon=$(curl --silent --retry 3 --request GET --url http://ip-api.com/json/$WANIP | jq --raw-output .lon)
-
-  # Get the Weather grid for the latitude/longitude
-  WANgridurl=$(curl --silent --retry 3 --request GET --url https://api.weather.gov/points/$WANlat,$WANlon | jq --raw-output .properties.forecast)
-
-  # Extract the weather JSON to a text file in order to query from it with JQ
-  curl --silent --retry 3 --request GET --url $WANgridurl | jq . --raw-output > $WANwxforecast
-  LINES=$(cat $WANwxforecast | wc -l) #Check to see how many lines are in this file
-
-  if [ $LINES -eq 0 ] #If there are no lines, error out
-  then
-    echo -e "\n${CRed} [Error: Unable to download weather data. Try again later...]\n${CClear}"
-    echo -e "$(date) - WXMON ----------> ERROR: Unable to fetch weather data. May be a temporary issue. Try again later." >> $LOGFILE
-    sleep 3
-    exit 0
-  else
     # Display the city, lat and long
     #WANCITY="Your City"
     #WANlat=32.3321
     #WANlon=-64.7660
     clear
     logo
+
+    echo ""
+    printf "\r${InvYellow} ${CClear}${CYellow} [Getting Interface]...   "
+
+    # Get the WAN interface in order to check for the public WAN IP address
+    WANIFNAME=$(get_wan_setting ifname)
+    printf "\r${InvYellow} ${CClear}${CYellow} [Getting WAN IP]...      "
+    WANIP=$(curl --silent --fail --interface $WANIFNAME --request GET --url https://ipv4.icanhazip.com)
+    printf "\r${InvYellow} ${CClear}${CYellow} [Getting WAN City]...    "
+    WANCITY=$(curl --silent --retry 3 --request GET --url http://ip-api.com/json/$WANIP | jq --raw-output .city)
+
+    # Get the latitute/longitude of the public WAN IP address
+    printf "\r${InvYellow} ${CClear}${CYellow} [Getting Long/Lat]...    "
+    WANlat=$(curl --silent --retry 3 --request GET --url http://ip-api.com/json/$WANIP | jq --raw-output .lat)
+    WANlon=$(curl --silent --retry 3 --request GET --url http://ip-api.com/json/$WANIP | jq --raw-output .lon)
+
+    printf "\r${InvYellow} ${CClear}${CYellow} [Downloading WX Feeds]..."
+    # Get the Weather grid for the latitude/longitude
+    WANgridurl=$(curl --silent --retry 3 --request GET --url https://api.weather.gov/points/$WANlat,$WANlon | jq --raw-output .properties.forecast)
+
+    # Extract the weather JSON to a text file in order to query from it with JQ
+    curl --silent --retry 3 --request GET --url $WANgridurl | jq . --raw-output > $WANwxforecast
+    LINES=$(cat $WANwxforecast | wc -l) #Check to see how many lines are in this file
+
+    if [ $LINES -eq 0 ] #If there are no lines, error out
+    then
+      echo -e "\n${CRed} [Error: Unable to download weather data. Try again later...]\n${CClear}"
+      echo -e "$(date) - WXMON ----------> ERROR: Unable to fetch weather data. May be a temporary issue. Try again later." >> $LOGFILE
+      sleep 3
+      exit 0
+    fi
+
+    printf "\r${CClear}"
+
     if [ "$UpdateNotify" != "0" ]; then
       echo -e "${CRed}  $UpdateNotify${CClear}"
-      echo -e "${CGreen} ________${CClear}"
+      echo -e "${CGreen} ________${CClear}                     "
     else
-      echo -e "${CGreen} ________${CClear}"
+      echo -e "${CGreen} ________${CClear}                     "
     fi
     echo -e "${CGreen}/${CRed}Location${CClear}${CGreen}\_________________________________________________________${CClear}"
     echo ""
@@ -318,7 +329,6 @@ weathercheck () {
   echo -e "${CRed}(M)${CGreen}ore Detail?"
   echo ""
 
-fi
 }
 
 # -------------------------------------------------------------------------------------------------------------------------
@@ -362,49 +372,60 @@ echo ""
 # weathercheck is a function that downloads the latest weather for your WAN IP location
 worldweathercheck () {
 
-  # Get the WAN interface in order to check for the public WAN IP address
-  WANIFNAME=$(get_wan_setting ifname)
-  WANIP=$(curl --silent --fail --interface $WANIFNAME --request GET --url https://ipv4.icanhazip.com)
-  WANCITY=$(curl --silent --retry 3 --request GET --url http://ip-api.com/json/$WANIP | jq --raw-output .city)
-
-  # Get the latitute/longitude of the public WAN IP address
-  WANlat=$(curl --silent --retry 3 --request GET --url http://ip-api.com/json/$WANIP | jq --raw-output .lat)
-  WANlon=$(curl --silent --retry 3 --request GET --url http://ip-api.com/json/$WANIP | jq --raw-output .lon)
-
-  if [ "$UnitMeasure" == "0" ]; then
-    tempunits="fahrenheit"
-    tempunitsabbr="F"
-    windunits="mph"
-  elif [ "$UnitMeasure" == "1" ]; then
-    tempunits="celsius"
-    tempunitsabbr="C"
-    windunits="kmh"
-  fi
-
-  # Extract weather based on lat/long to a file
-  curl --silent --retry 3 --request GET --url 'https://api.open-meteo.com/v1/forecast?latitude='$WANlat'&longitude='$WANlon'&temperature_unit='$tempunits'&windspeed_unit='$windunits'&daily=weathercode,temperature_2m_max,temperature_2m_min,winddirection_10m_dominant,windspeed_10m_max,windgusts_10m_max&past_days=0&timezone=auto' | jq > $WANwx2forecast
-
-  # Extract the weather JSON to a text file in order to query from it with JQ
-  LINES=$(cat $WANwx2forecast | wc -l) #Check to see how many lines are in this file
-
-  if [ $LINES -eq 0 ] #If there are no lines, error out
-  then
-    echo -e "\n${CRed} [Error: Unable to download weather data. Try again later...]\n${CClear}"
-    echo -e "$(date) - WXMON ----------> ERROR: Unable to fetch weather data. May be a temporary issue. Try again later." >> $LOGFILE
-    sleep 3
-    exit 0
-  else
     # Display the city, lat and long
     #WANCITY="Your City"
     #WANlat=32.3321
     #WANlon=-64.7660
     clear
     logo
+
+    echo ""
+    printf "\r${InvYellow} ${CClear}${CYellow} [Getting Interface]...   "
+
+    # Get the WAN interface in order to check for the public WAN IP address
+    WANIFNAME=$(get_wan_setting ifname)
+    printf "\r${InvYellow} ${CClear}${CYellow} [Getting WAN IP]...      "
+    WANIP=$(curl --silent --fail --interface $WANIFNAME --request GET --url https://ipv4.icanhazip.com)
+    printf "\r${InvYellow} ${CClear}${CYellow} [Getting WAN City]...    "
+    WANCITY=$(curl --silent --retry 3 --request GET --url http://ip-api.com/json/$WANIP | jq --raw-output .city)
+
+    # Get the latitute/longitude of the public WAN IP address
+    printf "\r${InvYellow} ${CClear}${CYellow} [Getting Long/Lat]...    "
+    WANlat=$(curl --silent --retry 3 --request GET --url http://ip-api.com/json/$WANIP | jq --raw-output .lat)
+    WANlon=$(curl --silent --retry 3 --request GET --url http://ip-api.com/json/$WANIP | jq --raw-output .lon)
+
+    if [ "$UnitMeasure" == "0" ]; then
+      tempunits="fahrenheit"
+      tempunitsabbr="F"
+      windunits="mph"
+    elif [ "$UnitMeasure" == "1" ]; then
+      tempunits="celsius"
+      tempunitsabbr="C"
+      windunits="kmh"
+    fi
+
+    printf "\r${InvYellow} ${CClear}${CYellow} [Downloading WX Feeds]..."
+    # Extract weather based on lat/long to a file
+    curl --silent --retry 3 --request GET --url 'https://api.open-meteo.com/v1/forecast?latitude='$WANlat'&longitude='$WANlon'&temperature_unit='$tempunits'&windspeed_unit='$windunits'&daily=weathercode,temperature_2m_max,temperature_2m_min,winddirection_10m_dominant,windspeed_10m_max,windgusts_10m_max&past_days=0&timezone=auto' | jq > $WANwx2forecast
+
+    # Extract the weather JSON to a text file in order to query from it with JQ
+    LINES=$(cat $WANwx2forecast | wc -l) #Check to see how many lines are in this file
+
+    if [ $LINES -eq 0 ] #If there are no lines, error out
+    then
+      echo -e "\n${CRed} [Error: Unable to download weather data. Try again later...]\n${CClear}"
+      echo -e "$(date) - WXMON ----------> ERROR: Unable to fetch weather data. May be a temporary issue. Try again later." >> $LOGFILE
+      sleep 3
+      exit 0
+    fi
+
+    printf "\r${CClear}"
+
     if [ "$UpdateNotify" != "0" ]; then
       echo -e "${CRed}  $UpdateNotify${CClear}"
-      echo -e "${CGreen} ________${CClear}"
+      echo -e "${CGreen} ________${CClear}                    "
     else
-      echo -e "${CGreen} ________${CClear}"
+      echo -e "${CGreen} ________${CClear}                    "
     fi
     echo -e "${CGreen}/${CRed}Location${CClear}${CGreen}\_________________________________________________________${CClear}"
     echo ""
@@ -477,7 +498,6 @@ worldweathercheck () {
 
   done
 
-fi
 }
 
 # -------------------------------------------------------------------------------------------------------------------------
