@@ -1,3 +1,11 @@
+v0.4b   - (TBA)
+          * FIXED: The first time aviation weather runs, it deletes some temp files that contain weather info... it was trying to delete files
+            that didn't exist, and complained.  Fixed this.
+
+v0.3b   - (February 23, 2023)
+          * ADDED: Some visualizations during the back and forth with APIs to determine locale, lat/long and weather data, just to give you
+            some more info during the troubleshooting process incase something hangs or is blocked.
+
 v0.2b   - (February 21, 2023)
           * ADDED: I incorporated a new option that lets you pick between the current US-based weather service, as well as a Global weather
             service. I found another API that lets you pull global weather info without the need of an API key, however each has their plusses
