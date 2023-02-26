@@ -4,6 +4,6 @@ Upcoming Planned Enhancements
 TO-DO:
 * Add weather alerts for major regional weather events
 * Possibly add text alerts for weather alerts that affect the routers immediate vicinity
-* If the AVWX api key is incorrect, it returns "null", clean up the response to make it friendlier
+* How about fancy weather graphics! 
 
 DONE:
