@@ -1,4 +1,4 @@
-v0.4b   - (TBA)
+v0.4b   - (April 25, 2023)
           * FIXED: The first time aviation weather runs, it deletes some temp files that contain weather info... it was trying to delete files
             that didn't exist, and complained.  Fixed this.
 
