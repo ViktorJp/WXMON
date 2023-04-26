@@ -1,8 +1,8 @@
 #!/bin/sh
 
-# WXMON 0.3b - Asus-Merlin Weather Monitor by Viktor Jaep, 2023
+# WXMON 0.4b - Asus-Merlin Weather Monitor by Viktor Jaep, 2023
 #
-# KILLMON is a shell script that provides current localized weather information directly from weather.gov and displays
+# WXMON is a shell script that provides current localized weather information directly from weather.gov and displays
 # this information on screen in an SSH dashboard window. Options to expand on the weather forecast to give you more
 # detail about the upcoming forecast. Also, capabilities to view aviation-related METAR and TAF forecasts are included.
 # This component was originally added to my PWRMON script, which monitors your Tesla Powerwall batteries, solar panels,
@@ -31,7 +31,7 @@
 # -------------------------------------------------------------------------------------------------------------------------
 # System Variables (Do not change beyond this point or this may change the programs ability to function correctly)
 # -------------------------------------------------------------------------------------------------------------------------
-Version=0.3b
+Version=0.4b
 Beta=1
 LOGFILE="/jffs/addons/wxmon.d/wxmon.log"           # Logfile path/name that captures important date/time events - change
 APPPATH="/jffs/scripts/wxmon.sh"                   # Path to the location of wxmon.sh
@@ -519,8 +519,8 @@ aviationweathercheck () {
   printf "\r${InvYellow} ${CClear}${CYellow} [Downloading WX Feeds]..."
 
   #Delete any current weather files
-  rm /jffs/addons/wxmon.d/wxmetar.txt 2>&1
-  rm /jffs/addons/wxmon.d/wxtaf.txt 2>&1
+  rm -f /jffs/addons/wxmon.d/wxmetar.txt
+  rm -f /jffs/addons/wxmon.d/wxtaf.txt
 
   #curl --silent --retry 3 --request GET --url https://avwx.rest/api/metar/$icaoairportcode --header 'Authorization: BEARER '$avwxapitoken | jq --raw-output '.flight_rules,.sanitized'> /jffs/addons/wxmon.d/wxmetar.txt
   curl --silent --retry 3 --request GET --url 'https://aviationweather.gov/adds/dataserver_current/httpparam?dataSource=metars&requestType=retrieve&format=xml&hoursBeforeNow=3&mostRecent=true&stationString='$icaoairportcode > /jffs/addons/wxmon.d/wxmetar.txt
@@ -776,8 +776,8 @@ vuninstall () {
     echo -e "\n${CCyan}Are you sure? Please type 'Y' to validate you want to proceed.${CClear}"
       if promptyn "(y/n): "; then
         clear
-        rm -r /jffs/addons/wxmon.d
-        rm /jffs/scripts/wxmon.sh
+        rm -f -r /jffs/addons/wxmon.d
+        rm -f /jffs/scripts/wxmon.sh
         echo ""
         echo -e "\n${CGreen}WXMON has been uninstalled...${CClear}"
         echo ""
