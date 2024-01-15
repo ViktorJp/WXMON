@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# WXMON 0.4b - Asus-Merlin Weather Monitor by Viktor Jaep, 2023
+# WXMON 0.5 - Asus-Merlin Weather Monitor by Viktor Jaep, 2023/2024
 #
 # WXMON is a shell script that provides current localized weather information directly from weather.gov and displays
 # this information on screen in an SSH dashboard window. Options to expand on the weather forecast to give you more
@@ -8,7 +8,7 @@
 # This component was originally added to my PWRMON script, which monitors your Tesla Powerwall batteries, solar panels,
 # grid and home electrical usage. Having a weather component was useful in determining if upcoming days would yield good
 # solar production days. Understanding that many won't be able to make use of this feature, I decided to break this out
-# into its own standalone script -- WXMON.
+# into its own standalone script -- WXMON... a script that demonstrates what's possible with APIs on our routers.
 #
 # -------------------------------------------------------------------------------------------------------------------------
 # Shellcheck exclusions
@@ -31,8 +31,8 @@
 # -------------------------------------------------------------------------------------------------------------------------
 # System Variables (Do not change beyond this point or this may change the programs ability to function correctly)
 # -------------------------------------------------------------------------------------------------------------------------
-Version=0.4b
-Beta=1
+Version="0.5"
+Beta=0
 LOGFILE="/jffs/addons/wxmon.d/wxmon.log"           # Logfile path/name that captures important date/time events - change
 APPPATH="/jffs/scripts/wxmon.sh"                   # Path to the location of wxmon.sh
 CFGPATH="/jffs/addons/wxmon.d/wxmon.cfg"           # Path to the location of wxmon.cfg
@@ -250,10 +250,6 @@ get_wan_setting() {
 # weathercheck is a function that downloads the latest weather for your WAN IP location
 weathercheck () {
 
-    # Display the city, lat and long
-    #WANCITY="Your City"
-    #WANlat=32.3321
-    #WANlon=-64.7660
     clear
     logo
 
@@ -272,6 +268,11 @@ weathercheck () {
     WANlat=$(curl --silent --retry 3 --request GET --url http://ip-api.com/json/$WANIP | jq --raw-output .lat)
     WANlon=$(curl --silent --retry 3 --request GET --url http://ip-api.com/json/$WANIP | jq --raw-output .lon)
 
+    # Test Display the city, lat and long
+    WANCITY="Los Angeles"
+    WANlat=34.0549
+    WANlon=-118.2426
+
     printf "\r${InvYellow} ${CClear}${CYellow} [Downloading WX Feeds]..."
     # Get the Weather grid for the latitude/longitude
     WANgridurl=$(curl --silent --retry 3 --request GET --url https://api.weather.gov/points/$WANlat,$WANlon | jq --raw-output .properties.forecast)
@@ -282,6 +283,7 @@ weathercheck () {
 
     if [ $LINES -eq 0 ] #If there are no lines, error out
     then
+    	echo ""
       echo -e "\n${CRed} [Error: Unable to download weather data. Try again later...]\n${CClear}"
       echo -e "$(date) - WXMON ----------> ERROR: Unable to fetch weather data. May be a temporary issue. Try again later." >> $LOGFILE
       sleep 3
@@ -292,15 +294,13 @@ weathercheck () {
 
     if [ "$UpdateNotify" != "0" ]; then
       echo -e "${CRed}  $UpdateNotify${CClear}"
-      echo -e "${CGreen} ________${CClear}                     "
-    else
-      echo -e "${CGreen} ________${CClear}                     "
+      echo ""
     fi
-    echo -e "${CGreen}/${CRed}Location${CClear}${CGreen}\_________________________________________________________${CClear}"
+    echo -e "${InvDkGray}${CWhite}                               Location                               ${CClear}"
     echo ""
     echo -e "${InvGreen} ${CClear}${CGreen} Location: ${CCyan}$WANCITY ${CGreen}-- Latitude: ${CCyan}$WANlat ${CGreen}-- Longitude: ${CCyan}$WANlon"
-    echo -e "${CGreen} ________${CClear}"
-    echo -e "${CGreen}/${CRed}Forecast${CClear}${CGreen}\_________________________________________________________${CClear}"
+    echo ""
+    echo -e "${InvDkGray}${CWhite}                               Forecast                               ${CClear}"
     echo ""
 
     # Loop through the forecasts and display them
@@ -315,8 +315,8 @@ weathercheck () {
         WANwxWindDir=$(cat $WANwxforecast | jq -r '.properties.periods['$i'].windDirection | select( . != null )')
         WANwxShort=$(cat $WANwxforecast | jq -r '.properties.periods['$i'].shortForecast | select( . != null )')
         WANwxDetail=$(cat $WANwxforecast | jq -r '.properties.periods['$i'].detailedForecast | select( . != null )')
-        WANwxShortTrim=$(echo $WANwxShort | sed -e 's/.\{50\} /&\n/g')
-        WANwxDetailTrim=$(echo $WANwxDetail | sed -e 's/.\{50\} /&\n/g')
+        WANwxShortTrim=$(echo $WANwxShort | sed -e 's/.\{65\} /&\n/g')
+        WANwxDetailTrim=$(echo $WANwxDetail | sed -e 's/.\{65\} /&\n/g')
 
     echo -e "${InvGreen} ${CClear}${CGreen} Day: ${CCyan}$WANwxName ${CGreen}-- Temp: ${CCyan}$WANwxTemp$WANwxTempUnit ${CGreen}-- Wind: ${CCyan}$WANwxWind from $WANwxWindDir"
     echo -e "${InvGreen} ${CClear}${CGreen} Conditions: ${CCyan}$WANwxShortTrim"
@@ -338,12 +338,11 @@ weathercheckext () {
   clear
   logo
   if [ "$UpdateNotify" != "0" ]; then
+  	echo ""
     echo -e "${CRed}  $UpdateNotify${CClear}"
-    echo -e "${CGreen} _________________${CClear}"
-  else
-    echo -e "${CGreen} _________________${CClear}"
   fi
-  echo -e "${CGreen}/${CRed}Extended Forecast${CClear}${CGreen}\________________________________________________${CClear}"
+  echo ""
+  echo -e "${InvDkGray}${CWhite}                          Extended Forecast                           ${CClear}"
   echo ""
 
   # Loop through the forecasts and display them
@@ -353,7 +352,7 @@ weathercheckext () {
 
       WANwxName=$(cat $WANwxforecast | jq -r '.properties.periods['$i'].name | select( . != null )')
       WANwxDetail=$(cat $WANwxforecast | jq -r '.properties.periods['$i'].detailedForecast | select( . != null )')
-      WANwxDetailTrim=$(echo $WANwxDetail | sed -e 's/.\{57\} /&\n/g')
+      WANwxDetailTrim=$(echo $WANwxDetail | sed -e 's/.\{65\} /&\n/g')
 
   echo -e "${InvGreen} ${CClear}${CGreen} Day: ${CCyan}$WANwxName"
   echo -e "${CCyan}$WANwxDetailTrim"
@@ -423,15 +422,13 @@ worldweathercheck () {
 
     if [ "$UpdateNotify" != "0" ]; then
       echo -e "${CRed}  $UpdateNotify${CClear}"
-      echo -e "${CGreen} ________${CClear}                    "
-    else
-      echo -e "${CGreen} ________${CClear}                    "
+      echo ""
     fi
-    echo -e "${CGreen}/${CRed}Location${CClear}${CGreen}\_________________________________________________________${CClear}"
+    echo -e "${InvDkGray}${CWhite}                               Location                               ${CClear}"
     echo ""
     echo -e "${InvGreen} ${CClear}${CGreen} Location: ${CCyan}$WANCITY ${CGreen}-- Latitude: ${CCyan}$WANlat ${CGreen}-- Longitude: ${CCyan}$WANlon"
-    echo -e "${CGreen} ________${CClear}"
-    echo -e "${CGreen}/${CRed}Forecast${CClear}${CGreen}\_________________________________________________________${CClear}"
+    echo ""
+    echo -e "${InvDkGray}${CWhite}                               Forecast                               ${CClear}"
     echo ""
 
     # Loop through the forecasts and display them
@@ -522,14 +519,13 @@ aviationweathercheck () {
   rm -f /jffs/addons/wxmon.d/wxmetar.txt
   rm -f /jffs/addons/wxmon.d/wxtaf.txt
 
-  #curl --silent --retry 3 --request GET --url https://avwx.rest/api/metar/$icaoairportcode --header 'Authorization: BEARER '$avwxapitoken | jq --raw-output '.flight_rules,.sanitized'> /jffs/addons/wxmon.d/wxmetar.txt
-  curl --silent --retry 3 --request GET --url 'https://aviationweather.gov/adds/dataserver_current/httpparam?dataSource=metars&requestType=retrieve&format=xml&hoursBeforeNow=3&mostRecent=true&stationString='$icaoairportcode > /jffs/addons/wxmon.d/wxmetar.txt
+  curl --silent --retry 3 --request GET --url 'https://aviationweather.gov/api/data/metar?ids='$icaoairportcode'&format=xml&hours=3' > /jffs/addons/wxmon.d/wxmetar.txt
 
   #sed -n 's:.*<id>\(.*\)</id>.*:\1:p'
 
   if [ -f /jffs/addons/wxmon.d/wxmetar.txt ]; then
-    FlightRules=$(cat /jffs/addons/wxmon.d/wxmetar.txt | sed -n 's:.*<flight_category>\(.*\)</flight_category>.*:\1:p') 2>&1
-    CurrMETAR=$(cat /jffs/addons/wxmon.d/wxmetar.txt | sed -n 's:.*<raw_text>\(.*\)</raw_text>.*:\1:p') 2>&1
+    FlightRules=$(cat /jffs/addons/wxmon.d/wxmetar.txt | sed -n 's:.*<flight_category>\(.*\)</flight_category>.*:\1:p' | sed -n '1p') 2>&1
+    CurrMETAR=$(cat /jffs/addons/wxmon.d/wxmetar.txt | sed -n 's:.*<raw_text>\(.*\)</raw_text>.*:\1:p' | sed -n '1p') 2>&1
     CurrMETARTrim=$(echo $CurrMETAR | sed -e 's/.\{57\} /&\n/g')
     if [ "$FlightRules" == "Null" ]; then FlightRules="Unknown - Error getting weather"; fi
     if [ "$CurrMETAR" == "Null" ]; then CurrMETARTrim="Unknown - Error getting weather"; fi
@@ -538,11 +534,10 @@ aviationweathercheck () {
     CurrMETARTrim="Unknown - Error getting weather"
   fi
 
-  #curl --silent --retry 3 --request GET --url https://avwx.rest/api/taf/$icaoairportcode --header 'Authorization: BEARER '$avwxapitoken | jq --raw-output '.raw'> /jffs/addons/wxmon.d/wxtaf.txt
-  curl --silent --retry 3 --request GET --url 'https://aviationweather.gov/adds/dataserver_current/httpparam?datasource=tafs&requestType=retrieve&format=xml&mostRecentForEachStation=true&hoursBeforeNow=2&stationString='$icaoairportcode > /jffs/addons/wxmon.d/wxtaf.txt
+  curl --silent --retry 3 --request GET --url 'https://aviationweather.gov/api/data/taf?ids='$icaoairportcode'&format=xml&hours=3' > /jffs/addons/wxmon.d/wxtaf.txt
 
   if [ -f /jffs/addons/wxmon.d/wxtaf.txt ]; then
-    CurrTAF=$(cat /jffs/addons/wxmon.d/wxtaf.txt | sed -n 's:.*<raw_text>\(.*\)</raw_text>.*:\1:p') 2>&1
+    CurrTAF=$(cat /jffs/addons/wxmon.d/wxtaf.txt | sed -n 's:.*<raw_text>\(.*\)</raw_text>.*:\1:p' | sed -n '1p') 2>&1
     CurrTAFTrim=$(echo $CurrTAF | sed -e 's/.\{57\} /&\n/g')
     if [ "$CurrTAF" == "Null" ]; then CurrTAFTrim="Unknown - Error getting weather"; fi
   else
@@ -553,21 +548,17 @@ aviationweathercheck () {
 
   if [ "$UpdateNotify" != "0" ]; then
     echo -e "${CRed}  $UpdateNotify${CClear}"
-    echo -e "${CGreen} _________________${CClear}          "
-  else
-    echo -e "${CGreen} _________________${CClear}          "
+    echo ""
   fi
-  echo -e "${CGreen}/${CRed}$icaoairportcode Flight Rules${CClear}${CGreen}\________________________________________________${CClear}"
+  echo -e "${InvDkGray}${CWhite}                          $icaoairportcode Flight Rules                           ${CClear}"
   echo ""
   echo -e "${InvGreen} ${CClear}${CGreen} Current Conditions: ${CCyan}$FlightRules"
-  echo ""
-  echo -e "${CGreen} __________${CClear}"
-  echo -e "${CGreen}/${CRed}$icaoairportcode METAR${CClear}${CGreen}\_______________________________________________________${CClear}"
-  echo ""
+  echo "" 
+  echo -e "${InvDkGray}${CWhite}                             $icaoairportcode METAR                               ${CClear}"
+  echo "" 
   echo -e "${CCyan}$CurrMETARTrim"
   echo ""
-  echo -e "${CGreen} ________${CClear}"
-  echo -e "${CGreen}/${CRed}$icaoairportcode TAF${CClear}${CGreen}\_________________________________________________________${CClear}"
+  echo -e "${InvDkGray}${CWhite}                              $icaoairportcode TAF                                ${CClear}"
   echo ""
   echo -e "${CCyan}$CurrTAFTrim"
   echo ""
@@ -607,7 +598,7 @@ updatecheck () {
 vlogs() {
 
 export TERM=linux
-nano $LOGFILE
+nano +999999 --linenumbers $LOGFILE
 
 }
 
@@ -624,7 +615,7 @@ vconfig () {
       logoNM
       echo ""
       echo -e "${CGreen}----------------------------------------------------------------"
-      echo -e "${CGreen}Configuration Utility Options"
+      echo -e "${CGreen}Configuration Options"
       echo -e "${CGreen}----------------------------------------------------------------"
       echo -e "${InvDkGray}${CWhite} 1 ${CClear}${CCyan}: Refresh Interval (min)      :"${CGreen}$Interval
       if [ "$UnitMeasure" == "0" ]; then UnitMeasureDisplay="Imperial"
@@ -658,6 +649,7 @@ vconfig () {
               echo ""
               echo -e "${CCyan}1. How many minutes would you like to use to refresh your WX stats?"
               echo -e "${CYellow}(Default = 360)${CClear}"
+              echo -e ""
               read -p 'Interval (minutes): ' Interval1
               Interval=$Interval1
             ;;
@@ -667,8 +659,8 @@ vconfig () {
               echo -e "${CCyan}2. What is your preference for the Unit of Measure? Please note: this will"
               echo -e "${CCyan}only apply for the Global Weather Service option. Choosing the US-based"
               echo -e "${CCyan}Weather Service will default to Imperial measurements."
-              echo -e "${CCyan}(0 = Imperial - F/Mph) or (1 = Metric - C/Kmh)?"
-              echo -e "${CYellow}(Default = 1)${CClear}"
+              echo -e "${CYellow}(0 = Imperial - F/Mph) or (1 = Metric - C/Kmh) (Default = 1)${CClear}"
+              echo -e ""
               read -p 'Unit of Measure: ' UnitMeasure1
               UnitMeasure2=$(echo $UnitMeasure1 | tr '[0-1]')
               if [ -z "$UnitMeasure1" ]; then UnitMeasure=0; else UnitMeasure=$UnitMeasure2; fi
@@ -683,8 +675,8 @@ vconfig () {
               echo -e "${CCyan}Global option should provide for weather conditions across the globe, and"
               echo -e "${CCyan}will give you a 7-day forecast, does not provide you with an expanded"
               echo -e "${CCyan}forecast, and its information is more limited."
-              echo -e "${CCyan}(0 = US-only) or (1 = Global)?"
-              echo -e "${CYellow}(Default = 1)${CClear}"
+              echo -e "${CYellow}(0 = US-only) or (1 = Global) (Default = 1)"
+              echo -e ""
               read -p 'Weather Service: ' WXService1
               WXService2=$(echo $WXService1 | tr '[0-1]')
               if [ -z "$WXService1" ]; then WXService=0; else WXService=$WXService2; fi
@@ -694,12 +686,12 @@ vconfig () {
               echo ""
               echo -e "${CCyan}4. Would you like to enable aviation weather METAR and TAF updates?"
               echo -e "${CYellow}(Aviation Weather Enabled Default = No)${CClear}"
+              echo -e ""
               if promptyn "Enable Aviation Weather? (y/n): "; then
                 aviationwx="Enabled"
                 echo ""
                 echo ""
-                echo -e "${CGreen}NOTE: Press ENTER at the prompt to use your previously"
-                echo -e "${CGreen}saved entry.${CClear}"
+                echo -e "${CGreen}NOTE: Press ENTER at the prompt to use your previously saved entry.${CClear}"
                 echo ""
                 read -p 'Enter your ICAO Airport Code (ex: KLAX): ' icaoairportcode1
                 if [ ! -z "$icaoairportcode1" ]; then icaoairportcode=$icaoairportcode1; fi
@@ -713,9 +705,9 @@ vconfig () {
             5) # -----------------------------------------------------------------------------------------
               echo ""
               echo -e "${CCyan}5. What is your preference for the Interval Progress Bar?"
-              echo -e "${CCyan}(0 = Standard) or (1 = Minimalist)?"
-              echo -e "${CYellow}(Default = 0)${CClear}"
-              read -p 'Progress Bar Pref: ' ProgPref1
+              echo -e "${CYellow}(0 = Standard) or (1 = Minimalist) (Default = 0)"
+              echo -e ""
+              read -p 'Progress Bar Preference: ' ProgPref1
               ProgPref2=$(echo $ProgPref1 | tr '[0-1]')
               if [ -z "$ProgPref1" ]; then ProgPref=0; else ProgPref=$ProgPref2; fi
             ;;
@@ -729,10 +721,9 @@ vconfig () {
                 echo 'icaoairportcode="'"$icaoairportcode"'"'
                 echo 'ProgPref='$ProgPref
               } > $CFGPATH
-              echo ""
               echo -e "${CGreen}Applying config changes to WXMON..."
               echo -e "$(date) - WXMON - Successfully wrote a new config file" >> $LOGFILE
-              sleep 3
+              sleep 2
               return
             ;;
 
@@ -821,11 +812,8 @@ vupdate () {
         echo -e "${CCyan}Download successful!${CClear}"
         echo -e "$(date) - WXMON - Successfully downloaded WXMON v$DLVersion" >> $LOGFILE
         echo ""
-        echo -e "${CYellow}Please exit, restart and configure new options using: 'wxmon.sh -config'.${CClear}"
-        echo -e "${CYellow}NOTE: New features may have been added that require your input to take${CClear}"
-        echo -e "${CYellow}advantage of its full functionality.${CClear}"
-        echo ""
-        read -rsp $'Press any key to continue...\n' -n1 key
+        read -rsp $'Press any key to restart WXMON...\n' -n1 key
+        exec /jffs/scripts/wxmon.sh -setup
         return
       else
         echo ""
@@ -844,11 +832,8 @@ vupdate () {
         echo -e "${CCyan}Download successful!${CClear}"
         echo -e "$(date) - WXMON - Successfully downloaded WXMON v$DLVersion" >> $LOGFILE
         echo ""
-        echo -e "${CYellow}Please exit, restart and configure new options using: 'wxmon.sh -config'.${CClear}"
-        echo -e "${CYellow}NOTE: New features may have been added that require your input to take${CClear}"
-        echo -e "${CYellow}advantage of its full functionality.${CClear}"
-        echo ""
-        read -rsp $'Press any key to continue...\n' -n1 key
+        read -rsp $'Press any key to restart WXMON...\n' -n1 key
+        exec /jffs/scripts/wxmon.sh -setup
         return
       else
         echo ""
@@ -874,10 +859,17 @@ vsetup () {
     clear
     logoNM
     echo ""
-    echo -e "${CYellow}Setup Utility${CClear}" # Provide main setup menu
-    echo ""
+    echo -e "${InvDkGray}${CWhite}                    Setup + Operations Menu                     ${CClear}" # Provide main setup menu
+    if [ "$FromUI" == "0" ]; then
+      echo -e "${CGreen}----------------------------------------------------------------"
+      echo -e "${CGreen}Operations"
+      echo -e "${CGreen}----------------------------------------------------------------"
+      echo -e "${InvDkGray}${CWhite} m1 ${CClear}${CCyan}: Launch WXMON into Normal Monitoring Mode"
+      echo -e "${InvDkGray}${CWhite} m2 ${CClear}${CCyan}: Launch WXMON into Normal Monitoring Mode w/ Screen"
+      echo ""
+    fi
     echo -e "${CGreen}----------------------------------------------------------------"
-    echo -e "${CGreen}Operations"
+    echo -e "${CGreen}Setup + Configuration"
     echo -e "${CGreen}----------------------------------------------------------------"
     echo -e "${InvDkGray}${CWhite} sc ${CClear}${CCyan}: Setup and Configure WXMON"
     echo -e "${InvDkGray}${CWhite} fr ${CClear}${CCyan}: Force Re-install Entware Dependencies"
@@ -886,13 +878,6 @@ vsetup () {
     echo -e "${InvDkGray}${CWhite} un ${CClear}${CCyan}: Uninstall"
     echo -e "${InvDkGray}${CWhite}  e ${CClear}${CCyan}: Exit"
     echo -e "${CGreen}----------------------------------------------------------------"
-    if [ "$FromUI" == "0" ]; then
-      echo -e "${CGreen}Launch"
-      echo -e "${CGreen}----------------------------------------------------------------"
-      echo -e "${InvDkGray}${CWhite} m1 ${CClear}${CCyan}: Launch WXMON into Normal Monitoring Mode"
-      echo -e "${InvDkGray}${CWhite} m2 ${CClear}${CCyan}: Launch WXMON into Normal Monitoring Mode w/ Screen"
-      echo -e "${CGreen}----------------------------------------------------------------"
-    fi
     echo ""
     printf "Selection: "
     read -r InstallSelection
