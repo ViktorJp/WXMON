@@ -269,9 +269,9 @@ weathercheck () {
     WANlon=$(curl --silent --retry 3 --request GET --url http://ip-api.com/json/$WANIP | jq --raw-output .lon)
 
     # Test Display the city, lat and long
-    WANCITY="Los Angeles"
-    WANlat=34.0549
-    WANlon=-118.2426
+    #WANCITY="Los Angeles"
+    #WANlat=34.0549
+    #WANlon=-118.2426
 
     printf "\r${InvYellow} ${CClear}${CYellow} [Downloading WX Feeds]..."
     # Get the Weather grid for the latitude/longitude
