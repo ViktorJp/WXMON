@@ -1,3 +1,13 @@
+v0.5    - (January 15, 2024)
+          * MAJOR: Official release! It's been a long time coming. Please know this is just a "what is possible" kind of script. It serves
+            no purpose other than seeing what can be done with API weather feeds, extracting data from XML and displaying it in an orderly
+            fashion on the screen. Purely for enjoyment, if you'd rather get your local weather in an SSH window on your router vs. one of
+            the many old, tired web-based weather services/apps out there. ;)
+          * FIXED: aviationweather.gov recently decided to change their API methods, and had to make some fixes in order to get the Aviation
+            weather working again. Decided it was time to freshen things up, get this out of beta, and on the streets!
+          * FIXED: After update, script will automatically run with the new version instead of having to exit out and run the script again.
+          * MINOR: General enhancements to overall look & feel, bringing it under the same standards as BACKUPMON at this point.
+
 v0.4b   - (April 25, 2023)
           * FIXED: The first time aviation weather runs, it deletes some temp files that contain weather info... it was trying to delete files
             that didn't exist, and complained.  Fixed this.
