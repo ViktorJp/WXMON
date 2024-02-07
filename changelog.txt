@@ -1,38 +1,38 @@
-v1.1.4  - (February 7, 2024)
-          * PATCH: Changed the versioning logic to align with the general accepted way of versioning, using the notation: major.minor.patch
-            ... finally, right? After seeing @thelonelycoder changing his ways, I figured it was probably time for me as well. All my scripts
-            moving forward will go this route. Change log wording is now changed to conform to the major/minor/patch standards. So previously,
-            FIXED now conforms to PATCH, ADDED conforms to MINOR, and MAJOR stays the same!
-          * PATCH: Going to call a do-over on the versioning of v0.5. Technically an official release, so MAJOR: 1, MINOR: 1, PATCH: 4 based
-            on the changelog between Jan 15 and Feb 7.  Welcome to v1.1.4! :)
+v1.1.4   - (February 7, 2024)
+         - PATCH: Changed the versioning logic to align with the general accepted way of versioning, using the notation: major.minor.patch
+           ... finally, right? After seeing @thelonelycoder changing his ways, I figured it was probably time for me as well. All my scripts
+           moving forward will go this route. Change log wording is now changed to conform to the major/minor/patch standards. So previously,
+           FIXED now conforms to PATCH, ADDED conforms to MINOR, and MAJOR stays the same!
+         - PATCH: Going to call a do-over on the versioning of v0.5. Technically an official release, so MAJOR: 1, MINOR: 1, PATCH: 4 based
+           on the changelog between Jan 15 and Feb 7.  Welcome to v1.1.4! :)
 
-v0.5    - (January 15, 2024)
-          * MAJOR: Official release! It's been a long time coming. Please know this is just a "what is possible" kind of script. It serves
-            no purpose other than seeing what can be done with API weather feeds, extracting data from XML and displaying it in an orderly
-            fashion on the screen. Purely for enjoyment, if you'd rather get your local weather in an SSH window on your router vs. one of
-            the many old, tired web-based weather services/apps out there. ;)
-          * FIXED: aviationweather.gov recently decided to change their API methods, and had to make some fixes in order to get the Aviation
-            weather working again. Decided it was time to freshen things up, get this out of beta, and on the streets!
-          * FIXED: After update, script will automatically run with the new version instead of having to exit out and run the script again.
-          * MINOR: General enhancements to overall look & feel, bringing it under the same standards as BACKUPMON at this point.
+v0.5     - (January 15, 2024)
+         - MAJOR: Official release! It's been a long time coming. Please know this is just a "what is possible" kind of script. It serves
+           no purpose other than seeing what can be done with API weather feeds, extracting data from XML and displaying it in an orderly
+           fashion on the screen. Purely for enjoyment, if you'd rather get your local weather in an SSH window on your router vs. one of
+           the many old, tired web-based weather services/apps out there. ;)
+         - FIXED: aviationweather.gov recently decided to change their API methods, and had to make some fixes in order to get the Aviation
+           weather working again. Decided it was time to freshen things up, get this out of beta, and on the streets!
+         - FIXED: After update, script will automatically run with the new version instead of having to exit out and run the script again.
+         - MINOR: General enhancements to overall look & feel, bringing it under the same standards as BACKUPMON at this point.
 
-v0.4b   - (April 25, 2023)
-          * FIXED: The first time aviation weather runs, it deletes some temp files that contain weather info... it was trying to delete files
-            that didn't exist, and complained.  Fixed this.
+v0.4b    - (April 25, 2023)
+         - FIXED: The first time aviation weather runs, it deletes some temp files that contain weather info... it was trying to delete files
+           that didn't exist, and complained.  Fixed this.
 
-v0.3b   - (February 23, 2023)
-          * ADDED: Some visualizations during the back and forth with APIs to determine locale, lat/long and weather data, just to give you
-            some more info during the troubleshooting process incase something hangs or is blocked.
+v0.3b    - (February 23, 2023)
+         - ADDED: Some visualizations during the back and forth with APIs to determine locale, lat/long and weather data, just to give you
+           some more info during the troubleshooting process incase something hangs or is blocked.
 
-v0.2b   - (February 21, 2023)
-          * ADDED: I incorporated a new option that lets you pick between the current US-based weather service, as well as a Global weather
-            service. I found another API that lets you pull global weather info without the need of an API key, however each has their plusses
-            and minuses.  US-based weather is a only 3-day forecast, but has a user-friendly expanded forecast, but it gives much more richer
-            content.  The global-based weather is a 7-day forecast, does not have expanded weather, and uses more of the standard data elements.
-            The global weather does give you an option between using Imperial or Metric units of measurement, found in the config menu.
-          * CHANGED: Made a big change in the aviation weather service, and will no longer need an API key to retrieve the METAR/TAF information.
-            You can still enable/disable the aviation weather, and pick your preferred station/airport. This *should* work globally.  Please let
-            me know if you run into any problems, and I will dive into it!
+v0.2b    - (February 21, 2023)
+         - ADDED: I incorporated a new option that lets you pick between the current US-based weather service, as well as a Global weather
+           service. I found another API that lets you pull global weather info without the need of an API key, however each has their plusses
+           and minuses.  US-based weather is a only 3-day forecast, but has a user-friendly expanded forecast, but it gives much more richer
+           content.  The global-based weather is a 7-day forecast, does not have expanded weather, and uses more of the standard data elements.
+           The global weather does give you an option between using Imperial or Metric units of measurement, found in the config menu.
+         - CHANGED: Made a big change in the aviation weather service, and will no longer need an API key to retrieve the METAR/TAF information.
+           You can still enable/disable the aviation weather, and pick your preferred station/airport. This *should* work globally.  Please let
+           me know if you run into any problems, and I will dive into it!
 
-v0.1b   - (February 8, 2023)
-          * RELEASE: Initial release to the masses... enjoy, while I work out any last minute bugs before a release candidate is made available. 
+v0.1b    - (February 8, 2023)
+         - RELEASE: Initial release to the masses... enjoy, while I work out any last minute bugs before a release candidate is made available. 
