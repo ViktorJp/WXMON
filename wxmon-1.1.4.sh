@@ -812,7 +812,7 @@ vupdate () {
       if promptyn "(y/n): "; then
         echo ""
         echo -e "${CCyan}Downloading WXMON ${CYellow}v$DLVersion${CClear}"
-        curl --silent --retry 3 "https://raw.githubusercontent.com/ViktorJp/wxmon/master/wxmon-$DLVersion.sh" -o "/jffs/scripts/wxmon.sh" && chmod a+rx "/jffs/scripts/wxmon.sh"
+        curl --silent --retry 3 "https://raw.githubusercontent.com/ViktorJp/wxmon/master/wxmon-$DLVersion.sh" -o "/jffs/scripts/wxmon.sh" && chmod 755 "/jffs/scripts/wxmon.sh"
         echo ""
         echo -e "${CCyan}Download successful!${CClear}"
         echo -e "$(date) - WXMON - Successfully downloaded WXMON v$DLVersion" >> $LOGFILE
@@ -832,7 +832,7 @@ vupdate () {
       if promptyn " (y/n): "; then
         echo ""
         echo -e "${CCyan}Downloading WXMON ${CYellow}v$DLVersion${CClear}"
-        curl --silent --retry 3 "https://raw.githubusercontent.com/ViktorJp/wxmon/master/wxmon-$DLVersion.sh" -o "/jffs/scripts/wxmon.sh" && chmod a+rx "/jffs/scripts/wxmon.sh"
+        curl --silent --retry 3 "https://raw.githubusercontent.com/ViktorJp/wxmon/master/wxmon-$DLVersion.sh" -o "/jffs/scripts/wxmon.sh" && chmod 755 "/jffs/scripts/wxmon.sh"
         echo ""
         echo -e "${CCyan}Download successful!${CClear}"
         echo -e "$(date) - WXMON - Successfully downloaded WXMON v$DLVersion" >> $LOGFILE
