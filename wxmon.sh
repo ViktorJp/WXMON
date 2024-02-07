@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# WXMON 0.5 - Asus-Merlin Weather Monitor by Viktor Jaep, 2023/2024
+# WXMON 1.1.4 - Asus-Merlin Weather Monitor by Viktor Jaep, 2023/2024
 #
 # WXMON is a shell script that provides current localized weather information directly from weather.gov and displays
 # this information on screen in an SSH dashboard window. Options to expand on the weather forecast to give you more
@@ -31,7 +31,7 @@
 # -------------------------------------------------------------------------------------------------------------------------
 # System Variables (Do not change beyond this point or this may change the programs ability to function correctly)
 # -------------------------------------------------------------------------------------------------------------------------
-Version="0.5"
+Version="1.1.4"
 Beta=0
 LOGFILE="/jffs/addons/wxmon.d/wxmon.log"           # Logfile path/name that captures important date/time events - change
 APPPATH="/jffs/scripts/wxmon.sh"                   # Path to the location of wxmon.sh
@@ -392,6 +392,11 @@ worldweathercheck () {
     printf "\r${InvYellow} ${CClear}${CYellow} [Getting Long/Lat]...    "
     WANlat=$(curl --silent --retry 3 --request GET --url http://ip-api.com/json/$WANIP | jq --raw-output .lat)
     WANlon=$(curl --silent --retry 3 --request GET --url http://ip-api.com/json/$WANIP | jq --raw-output .lon)
+
+    # Test Display the city, lat and long
+    #WANCITY="Los Angeles"
+    #WANlat=34.0549
+    #WANlon=-118.2426
 
     if [ "$UnitMeasure" == "0" ]; then
       tempunits="fahrenheit"
@@ -1180,7 +1185,7 @@ vsetup () {
       ScreenSess=$(screen -ls | grep "wxmon" | awk '{print $1}' | cut -d . -f 1)
       if [ -z $ScreenSess ]; then
         clear
-        echo -e "${CGreen}Executing WXMON using the SCREEN utility...${CClear}"
+        echo -e "${CGreen}Executing WXMON v$Version using the SCREEN utility...${CClear}"
         echo ""
         echo -e "${CCyan}IMPORTANT:${CClear}"
         echo -e "${CCyan}In order to keep WXMON running in the background,${CClear}"
@@ -1196,7 +1201,7 @@ vsetup () {
         exit 0
       else
         clear
-        echo -e "${CGreen}Connecting to existing WXMON SCREEN session...${CClear}"
+        echo -e "${CGreen}Connecting to existing WXMON v$Version SCREEN session...${CClear}"
         echo ""
         echo -e "${CCyan}IMPORTANT:${CClear}"
         echo -e "${CCyan}In order to keep WXMON running in the background,${CClear}"
