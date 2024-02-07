@@ -1,3 +1,11 @@
+v1.1.4  - (February 7, 2024)
+          * PATCH: Changed the versioning logic to align with the general accepted way of versioning, using the notation: major.minor.patch
+            ... finally, right? After seeing @thelonelycoder changing his ways, I figured it was probably time for me as well. All my scripts
+            moving forward will go this route. Change log wording is now changed to conform to the major/minor/patch standards. So previously,
+            FIXED now conforms to PATCH, ADDED conforms to MINOR, and MAJOR stays the same!
+          * PATCH: Going to call a do-over on the versioning of v0.5. Technically an official release, so MAJOR: 1, MINOR: 1, PATCH: 4 based
+            on the changelog between Jan 15 and Feb 7.  Welcome to v1.1.4! :)
+
 v0.5    - (January 15, 2024)
           * MAJOR: Official release! It's been a long time coming. Please know this is just a "what is possible" kind of script. It serves
             no purpose other than seeing what can be done with API weather feeds, extracting data from XML and displaying it in an orderly
