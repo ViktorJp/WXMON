@@ -1,3 +1,9 @@
+v2.1.0   - (TBA)
+         - MAJOR: Gave WXMON the major interface update treatment present in VPNMON-R3, RTRMON, BACKUPMON and TAILMON. It's important to
+           have consistency of interface usage and design across all my apps and ensure similar functionality.
+         - MINOR: Introduced another weather display and service option: wttr.in. This will now provide a graphical forecast output in a
+           nice grid, perfect for a dashboard.
+
 v1.1.4   - (February 7, 2024)
          - PATCH: Changed the versioning logic to align with the general accepted way of versioning, using the notation: major.minor.patch
            ... finally, right? After seeing @thelonelycoder changing his ways, I figured it was probably time for me as well. All my scripts
