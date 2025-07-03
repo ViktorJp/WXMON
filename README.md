@@ -1,4 +1,5 @@
 # WXMON v2.1.0
+Published on July 3, 2025
 
 ![image](https://github.com/user-attachments/assets/1334e17f-74c8-4fef-b519-59fae74a5699)
 
