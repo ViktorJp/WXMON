@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# WXMON 2.1.0 - Asus-Merlin Weather Monitor by Viktor Jaep, 2023/2025
+# WXMON 2.1.1 - Asus-Merlin Weather Monitor by Viktor Jaep, 2023/2025
 #
 # WXMON is a shell script that provides current localized weather information directly from weather.gov and displays
 # this information on screen in an SSH dashboard window. Options to expand on the weather forecast to give you more
@@ -17,7 +17,7 @@ export PATH="/sbin:/bin:/usr/sbin:/usr/bin:$PATH"
 # -------------------------------------------------------------------------------------------------------------------------
 # System Variables (Do not change beyond this point or this may change the programs ability to function correctly)
 # -------------------------------------------------------------------------------------------------------------------------
-version="2.1.0"
+version="2.1.1"
 beta=0
 logfile="/jffs/addons/wxmon.d/wxmon.log"           # Logfile path/name that captures important date/time events - change
 apppath="/jffs/scripts/wxmon.sh"                   # Path to the location of wxmon.sh
@@ -337,6 +337,7 @@ weathercheck ()
 
   # Test Display the city, lat and long
   #WANCITY="Atlanta"
+  #WANIP="123.231.31.12"
   #WANlat=33.8348
   #WANlon=-84.5893
 
@@ -459,6 +460,7 @@ worldweathercheck ()
 
   # Test Display the city, lat and long
   #WANCITY="Atlanta"
+  #WANIP="123.231.31.12"
   #WANlat=33.8348
   #WANlon=-84.5893
 
@@ -656,6 +658,7 @@ wttrcheck ()
 
   # Test Display the city, lat and long
   #WANCITY="Atlanta"
+  #WANIP="123.231.31.12"
   #WANlat=33.8348
   #WANlon=-84.5893
 
@@ -1080,16 +1083,17 @@ while true; do
   echo -e "${CClear}"
   if promptyn "Do you wish to proceed?"; then
     echo ""
-    echo -e "\nAre you sure? Please type 'y' to validate you wish to proceed.${CClear}"
+    echo -e "\nAre you sure? Please type 'y' below to validate you wish to proceed.${CClear}"
+    echo ""
       if promptyn "Please validate:"; then
         clear
         #Remove and uninstall files/directories
         rm -f -r /jffs/addons/wxmon.d
         rm -f /jffs/scripts/wxmon.sh
+        UninstallComplete="True"
+        echo -e "\nWXMON has been uninstalled... Goodbye!${CClear}"
         echo ""
-        echo -e "\nWXMON has been uninstalled...${CClear}"
-        echo ""
-        exit 0 && exit 0
+        exit 0
       else
         echo ""
         echo -e "\nExiting Uninstall Utility...${CClear}"
@@ -1377,7 +1381,11 @@ vsetup () {
 
           [Ee])
             echo -e "${CClear}"
-            exit 0
+            if [ "$FromUI" == "1" ]; then
+            	break
+            else
+              exit 0
+            fi
           ;;
 
           *)
@@ -1668,7 +1676,7 @@ while true; do
           case $key_press in
               [Ss]) hideoptions=0 ; [ "$hideoptions" != "$prevHideOpts" ] && timerReset=1; break;;
               [Hh]) hideoptions=1 ; [ "$hideoptions" != "$prevHideOpts" ] && timerReset=1; break;;
-              [Cc]) FromUI=1; (vsetup); source $cfgpath; echo -e "${CGreen}[Returning to the Main UI momentarily]                                   "; sleep 1; FromUI=0; IntervalMins=$((Interval * 60)); clear; echo ""; if [ $WXService == "0" ]; then weathercheck; elif [ $WXService == "1" ]; then worldweathercheck; elif [ $WXService == "2" ]; then wttrcheck; fi;;
+              [Cc]) FromUI=1; vsetup; if [ "$UninstallComplete" != "True" ]; then source $cfgpath; else exit 0; fi; echo -e "${CGreen}[Returning to the Main UI momentarily]                                   "; sleep 1; FromUI=0; IntervalMins=$((Interval * 60)); clear; echo ""; if [ $WXService == "0" ]; then weathercheck; elif [ $WXService == "1" ]; then worldweathercheck; elif [ $WXService == "2" ]; then wttrcheck; fi;;
               [Aa]) AVWXPage=1; aviationweathercheck;;
               [Uu]) weathercheck;;
               [Ww]) worldweathercheck;;
