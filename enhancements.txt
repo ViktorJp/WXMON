@@ -2,6 +2,7 @@ Upcoming Planned Enhancements
 -----------------------------
 
 TO-DO:
+* @kriukas: Add manual geolocation to get more accuracy for location in instances where ISP misreports IP location.
 * Add weather alerts for major regional weather events
 * Possibly add email/text alerts for weather alerts that affect the routers immediate vicinity
 
