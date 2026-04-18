@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# WXMON 2.1.1 - Asus-Merlin Weather Monitor by Viktor Jaep, 2023/2025
+# WXMON 2.2.0 - Asus-Merlin Weather Monitor by Viktor Jaep, 2023/2025
 #
 # WXMON is a shell script that provides current localized weather information directly from weather.gov and displays
 # this information on screen in an SSH dashboard window. Options to expand on the weather forecast to give you more
@@ -9,15 +9,24 @@
 # grid and home electrical usage. Having a weather component was useful in determining if upcoming days would yield good
 # solar production days. Understanding that many won't be able to make use of this feature, I decided to break this out
 # into its own standalone script -- WXMON... a script that demonstrates what's possible with APIs on our routers.
+#
+# Script last updated: 2026-Apr-17
 # -------------------------------------------------------------------------------------------------------------------------
 
 #Preferred standard router binaries path
 export PATH="/sbin:/bin:/usr/sbin:/usr/bin:$PATH"
+unset LD_LIBRARY_PATH
+
+##-------------------------------------##
+## Added by Martinski W. [2026-Apr-13] ##
+##-------------------------------------##
+[ "$HOME" != "/root" ] && export HOME="/root"
+export SCREENDIR="${HOME}/.screen"
 
 # -------------------------------------------------------------------------------------------------------------------------
 # System Variables (Do not change beyond this point or this may change the programs ability to function correctly)
 # -------------------------------------------------------------------------------------------------------------------------
-version="2.1.1"
+version="2.2.0"
 beta=0
 logfile="/jffs/addons/wxmon.d/wxmon.log"           # Logfile path/name that captures important date/time events - change
 apppath="/jffs/scripts/wxmon.sh"                   # Path to the location of wxmon.sh
@@ -57,6 +66,9 @@ InvCyan="\e[1;46m"
 CWhite="\e[1;37m"
 InvWhite="\e[1;107m"
 CClear="\e[0m"
+
+# To support automatic script updates from AMTM #
+doScriptUpdateFromAMTM=true
 
 # -------------------------------------------------------------------------------------------------------------------------
 # Functions
@@ -137,8 +149,6 @@ logoNMexit ()
 promptyn ()
 {
 
-
-
   while true; do
     read -p "$1 [y/n]? " YESNO
       case "$YESNO" in
@@ -169,6 +179,35 @@ spinner ()
 
   printf "\r"
 
+}
+
+##-------------------------------------------##
+## Borrwed from ExtremeFiretop [2026-Apr-11] ##
+##-------------------------------------------##
+ScriptUpdateFromAMTM()
+{
+    if ! "$doScriptUpdateFromAMTM"
+    then
+        printf "Automatic script updates via AMTM are currently disabled.\n\n"
+        return 1
+    fi
+
+    if [ $# -gt 0 ] && [ "$1" = "check" ]
+    then return 0
+    fi
+
+    # Force a BACKUPMON download and update
+    echo -e "${CClear}[i] Force Downloading WXMON... Please stand by..."
+    curl --silent --fail --retry 3 "https://raw.githubusercontent.com/ViktorJp/WXMON/main/wxmon.sh" -o "/jffs/scripts/wxmon.sh" && chmod 755 "/jffs/scripts/wxmon.sh"
+
+    DLsuccess=$?
+    if [ "$DLsuccess" -eq 0 ]; then
+      echo -e "${CClear}[i] WXMON Download/Update Success."
+    else
+      echo -e "${CClear}[X] WXMON Download/Update Failed."
+    fi
+
+    return "$DLsuccess"
 }
 
 # -------------------------------------------------------------------------------------------------------------------------
@@ -330,10 +369,16 @@ weathercheck ()
   printf "\r${InvGreen} ${CClear} WX STATUS: ${CGreen} [Getting WAN City]...    "
   WANCITY=$(curl --silent --retry 3 --request GET --url http://ip-api.com/json/$WANIP | jq --raw-output .city)
 
-  # Get the latitute/longitude of the public WAN IP address
-  printf "\r${InvGreen} ${CClear} WX STATUS: ${CGreen} [Getting Long/Lat]...    "
-  WANlat=$(curl --silent --retry 3 --request GET --url http://ip-api.com/json/$WANIP | jq --raw-output .lat)
-  WANlon=$(curl --silent --retry 3 --request GET --url http://ip-api.com/json/$WANIP | jq --raw-output .lon)
+  if [ "$Long" == "0" ] || [ "$Long" == "" ] && [ "$Lat" == "0" ] || [ "$Lat" == "" ]; then
+	  # Get the latitute/longitude of the public WAN IP address
+	  printf "\r${InvGreen} ${CClear} WX STATUS: ${CGreen} [Getting Long/Lat]...    "
+	  WANlat=$(curl --silent --retry 3 --request GET --url http://ip-api.com/json/$WANIP | jq --raw-output .lat)
+	  WANlon=$(curl --silent --retry 3 --request GET --url http://ip-api.com/json/$WANIP | jq --raw-output .lon)
+	else
+	  WANlat="$Lat"
+	  WANlon="$Long"
+	  WANCITY="Manual"
+	fi
 
   # Test Display the city, lat and long
   #WANCITY="Atlanta"
@@ -344,7 +389,7 @@ weathercheck ()
   printf "\r${InvGreen} ${CClear} WX STATUS: ${CGreen} [Downloading WX Feeds]..."
   # Get the Weather grid for the latitude/longitude
   WANgridurl=$(curl --silent --retry 3 --request GET --url https://api.weather.gov/points/$WANlat,$WANlon | jq --raw-output .properties.forecast)
-
+  
   # Extract the weather JSON to a text file in order to query from it with JQ
   curl --silent --retry 3 --request GET --url $WANgridurl | jq . --raw-output > $WANwxforecast
   LINES=$(cat $WANwxforecast | wc -l) #Check to see how many lines are in this file
@@ -446,6 +491,7 @@ worldweathercheck ()
   clear
   printf "\r${InvGreen} ${CClear} WX STATUS: ${CGreen} [Getting Interface]...   "
 
+
   # Get the WAN interface in order to check for the public WAN IP address
   WANIFNAME=$(get_wan_setting ifname)
   printf "\r${InvGreen} ${CClear} WX STATUS: ${CGreen} [Getting WAN IP]...      "
@@ -453,10 +499,16 @@ worldweathercheck ()
   printf "\r${InvGreen} ${CClear} WX STATUS: ${CGreen} [Getting WAN City]...    "
   WANCITY=$(curl --silent --retry 3 --request GET --url http://ip-api.com/json/$WANIP | jq --raw-output .city)
 
-  # Get the latitute/longitude of the public WAN IP address
-  printf "\r${InvGreen} ${CClear} WX STATUS: ${CGreen} [Getting Long/Lat]...    "
-  WANlat=$(curl --silent --retry 3 --request GET --url http://ip-api.com/json/$WANIP | jq --raw-output .lat)
-  WANlon=$(curl --silent --retry 3 --request GET --url http://ip-api.com/json/$WANIP | jq --raw-output .lon)
+  if [ "$Long" == "0" ] || [ "$Long" == "" ] && [ "$Lat" == "0" ] || [ "$Lat" == "" ]; then
+	  # Get the latitute/longitude of the public WAN IP address
+	  printf "\r${InvGreen} ${CClear} WX STATUS: ${CGreen} [Getting Long/Lat]...    "
+	  WANlat=$(curl --silent --retry 3 --request GET --url http://ip-api.com/json/$WANIP | jq --raw-output .lat)
+	  WANlon=$(curl --silent --retry 3 --request GET --url http://ip-api.com/json/$WANIP | jq --raw-output .lon)
+  else
+    WANlat="$Lat"
+    WANlon="$Long"
+    WANCITY="Manual"
+  fi
 
   # Test Display the city, lat and long
   #WANCITY="Atlanta"
@@ -646,15 +698,20 @@ wttrcheck ()
   clear
   printf "\r${InvGreen} ${CClear} WX STATUS: ${CGreen} [Getting Interface]...   "
 
-  # Get the WAN interface in order to check for the public WAN IP address
-  WANIFNAME=$(get_wan_setting ifname)
-  printf "\r${InvGreen} ${CClear} WX STATUS: ${CGreen} [Getting WAN IP]...      "
-  WANIP=$(curl --silent --fail --interface $WANIFNAME --request GET --url https://ipv4.icanhazip.com)
-
-  # Get the latitute/longitude of the public WAN IP address
-  printf "\r${InvGreen} ${CClear} WX STATUS: ${CGreen} [Getting Long/Lat]...    "
-  WANlat=$(curl --silent --retry 3 --request GET --url http://ip-api.com/json/$WANIP | jq --raw-output .lat)
-  WANlon=$(curl --silent --retry 3 --request GET --url http://ip-api.com/json/$WANIP | jq --raw-output .lon)
+  if [ "$Long" == "0" ] || [ "$Long" == "" ] && [ "$Lat" == "0" ] || [ "$Lat" == "" ]; then
+	  # Get the WAN interface in order to check for the public WAN IP address
+	  WANIFNAME=$(get_wan_setting ifname)
+	  printf "\r${InvGreen} ${CClear} WX STATUS: ${CGreen} [Getting WAN IP]...      "
+	  WANIP=$(curl --silent --fail --interface $WANIFNAME --request GET --url https://ipv4.icanhazip.com)
+	
+	  # Get the latitute/longitude of the public WAN IP address
+	  printf "\r${InvGreen} ${CClear} WX STATUS: ${CGreen} [Getting Long/Lat]...    "
+	  WANlat=$(curl --silent --retry 3 --request GET --url http://ip-api.com/json/$WANIP | jq --raw-output .lat)
+	  WANlon=$(curl --silent --retry 3 --request GET --url http://ip-api.com/json/$WANIP | jq --raw-output .lon)
+  else
+    WANlat="$Lat"
+    WANlon="$Long"
+  fi
 
   # Test Display the city, lat and long
   #WANCITY="Atlanta"
@@ -739,6 +796,12 @@ trimlogs()
 }
 
 # -------------------------------------------------------------------------------------------------------------------------
+# validate_coord is a function that checks to make a coordinate entry is formatted correctly
+validate_coord() {
+    echo "$1" | grep -qE '^-?[0-9]+\.[0-9]{4}$'
+}
+
+# -------------------------------------------------------------------------------------------------------------------------
 # vconfig is a function that guides you through the various configuration options for wxmon
 vconfig ()
 {
@@ -774,6 +837,12 @@ vconfig ()
       then
         ProgPrefDisplay="Minimalist"
       fi
+      
+      if [ "$Long" == "0" ] || [ "$Long" == "" ] && [ "$Lat" == "0" ] || [ "$Lat" == "" ]; then
+      	LongLatDisp="${CDkGray}OFF"
+      else
+        LongLatDisp="${CGreen}$Long,$Lat"
+      fi
 
       clear
       echo -e "${InvGreen} ${InvDkGray}${CWhite} WXMON Configuration Options                                                           ${CClear}"
@@ -783,21 +852,22 @@ vconfig ()
       echo -e "${InvGreen} ${CClear}${CDkGray}---------------------------------------------------------------------------------------${CClear}"
       echo -e "${InvGreen} ${CClear}"
       echo -e "${InvGreen} ${CClear} ${InvDkGray}${CWhite}(1)${CClear} : Refresh Interval (minutes)                   : ${CGreen}$Interval"
-      echo -e "${InvGreen} ${CClear} ${InvDkGray}${CWhite}(2)${CClear} : Units of Measurement (Imperial/Metric)       : ${CGreen}$UnitMeasureDisplay"
-      echo -e "${InvGreen} ${CClear} ${InvDkGray}${CWhite}(3)${CClear} : Weather Service?                             : ${CGreen}$WXServiceDisplay"
-      echo -e "${InvGreen} ${CClear} ${InvDkGray}${CWhite}(4)${CClear} : Enable Aviation WX?                          : ${CGreen}$aviationwx"
+      echo -e "${InvGreen} ${CClear} ${InvDkGray}${CWhite}(2)${CClear} : Manual Location Coordinates?                 : $LongLatDisp"
+      echo -e "${InvGreen} ${CClear} ${InvDkGray}${CWhite}(3)${CClear} : Units of Measurement (Imperial/Metric)       : ${CGreen}$UnitMeasureDisplay"
+      echo -e "${InvGreen} ${CClear} ${InvDkGray}${CWhite}(4)${CClear} : Weather Service?                             : ${CGreen}$WXServiceDisplay"
+      echo -e "${InvGreen} ${CClear} ${InvDkGray}${CWhite}(5)${CClear} : Enable Aviation WX?                          : ${CGreen}$aviationwx"
       if [ "$aviationwx" == "Enabled" ]; then
         echo -e "${InvGreen} ${CClear} ${InvDkGray}${CWhite} |-${CClear} :   ICAO Airport Code                          : ${CGreen}$icaoairportcode"
       else
         echo -e "${InvGreen} ${CClear} ${InvDkGray}${CWhite} |-${CClear}${CDkGray} :   ICAO Airport Code                          : N/A"
       fi
-      echo -e "${InvGreen} ${CClear} ${InvDkGray}${CWhite}(5)${CClear} : Progress Bar Preference?                     : ${CGreen}$ProgPrefDisplay"
+      echo -e "${InvGreen} ${CClear} ${InvDkGray}${CWhite}(6)${CClear} : Progress Bar Preference?                     : ${CGreen}$ProgPrefDisplay"
       echo -e "${InvGreen} ${CClear} ${InvDkGray}${CWhite} | ${CClear}"
       echo -e "${InvGreen} ${CClear} ${InvDkGray}${CWhite}(e)${CClear} : Exit & Save Changes${CClear}"
       echo -e "${InvGreen} ${CClear}"
       echo -e "${InvGreen} ${CClear}${CDkGray}---------------------------------------------------------------------------------------${CClear}"
       echo ""
-      read -p "Please select? (1-5, e=Exit): " SelectSlot
+      read -p "Please select? (1-6, e=Exit): " SelectSlot
       case $SelectSlot in
 
             1) #---------------------------------------------------------------------------------
@@ -831,7 +901,59 @@ vconfig ()
               fi
             ;;
 
-            2) # -----------------------------------------------------------------------------------------
+            2) #---------------------------------------------------------------------------------
+              if [ "$Long" == "0" ] || [ "$Long" == "" ] && [ "$Lat" == "0" ] || [ "$Lat" == "" ]; then
+                LongLatDisp="${CDkGray}OFF"
+              else
+                LongLatDisp="${CGreen}$Long,$Lat"
+              fi
+
+              clear
+              echo -e "${InvGreen} ${InvDkGray}${CWhite} Manual Location Coordinates                                                           ${CClear}"
+              echo -e "${InvGreen} ${CClear}"
+              echo -e "${InvGreen} ${CClear} Please indicate below if you would rather use your own longitude and latitude rather${CClear}"
+              echo -e "${InvGreen} ${CClear} weather coordinates? Normally, WXMON will find your approximate location by using${CClear}"
+              echo -e "${InvGreen} ${CClear} the nearest location based on your WAN IP address. Sometimes this is not accurate.${CClear}"
+              echo -e "${InvGreen} ${CClear}"
+              echo -e "${InvGreen} ${CClear} (Default = OFF)${CClear}"
+              echo -e "${InvGreen} ${CClear}${CDkGray}---------------------------------------------------------------------------------------${CClear}"
+              echo
+              echo -e "${CClear}Current Coordinates (Long/Lat): ${CGreen}$LongLatDisp${CClear}" ; echo
+              read -p "Please enter Longitude value (ex: -117.9698)? (0=off, e=Exit): " Long1
+              if [ "$Long1" = "e" ]; then
+                  echo -e "\n[Exiting]"; sleep 2
+              elif [ "$Long1" = "0" ]; then
+                  Long=0
+                  Lat=0
+                  saveconfig
+              elif ! validate_coord "$Long1"; then
+                  echo -e "\n${CRed}[ERROR] Invalid Longitude. Must have at least 1 digit before and exactly 4 digits after a decimal point (ex: -117.9698)${CClear}"
+                  echo ""
+                  read -rsp $'Press any key to continue...\n' -n1 key
+              else
+                  echo ""
+                  read -p "Please enter Latitude value (ex: 38.3364)? (0=off, e=Exit): " Lat1
+
+                  if [ "$Lat1" = "e" ]; then
+                      echo -e "\n[Exiting]"; sleep 2
+                  elif [ "$Lat1" = "0" ]; then
+                      Long=0
+                      Lat=0
+                      saveconfig
+                  elif ! validate_coord "$Lat1"; then
+                      echo -e "\n${CRed}[ERROR] Invalid Latitude. Must have at least 1 digit before and exactly 4 digits after a decimal point (ex: 38.3364)${CClear}"
+                      echo ""
+                      read -rsp $'Press any key to continue...\n' -n1 key
+                  else
+                      Long="$Long1"
+                      Lat="$Lat1"
+                      echo -e "$(date +'%b %d %Y %X') $(_GetLAN_HostName_) WXMON[$$] - INFO: New Long/Lat Location Configured: $Long,$Lat" >> $logfile
+                      saveconfig
+                  fi
+              fi
+            ;;
+
+            3) # -----------------------------------------------------------------------------------------
               clear
               echo -e "${InvGreen} ${InvDkGray}${CWhite} Unit of Measure                                                                       ${CClear}"
               echo -e "${InvGreen} ${CClear}"
@@ -873,7 +995,7 @@ vconfig ()
               fi
             ;;
 
-            3) # -----------------------------------------------------------------------------------------
+            4) # -----------------------------------------------------------------------------------------
               clear
               echo -e "${InvGreen} ${InvDkGray}${CWhite} Weather Service Provider                                                              ${CClear}"
               echo -e "${InvGreen} ${CClear}"
@@ -933,7 +1055,7 @@ vconfig ()
               fi
             ;;
 
-            4) # -----------------------------------------------------------------------------------------
+            5) # -----------------------------------------------------------------------------------------
               clear
               echo -e "${InvGreen} ${InvDkGray}${CWhite} Aviation Weather                                                                      ${CClear}"
               echo -e "${InvGreen} ${CClear}"
@@ -971,7 +1093,7 @@ vconfig ()
               fi
             ;;
 
-            5) # -----------------------------------------------------------------------------------------
+            6) # -----------------------------------------------------------------------------------------
               clear
               echo -e "${InvGreen} ${InvDkGray}${CWhite} Interval Progress Bar                                                                 ${CClear}"
               echo -e "${InvGreen} ${CClear}"
@@ -1016,6 +1138,8 @@ vconfig ()
             [Ss]) # -----------------------------------------------------------------------------------------
               echo ""
               { echo 'Interval='$Interval
+                echo 'Long="'"$Long"'"'
+                echo 'Lat="'"$Lat"'"'
                 echo 'UnitMeasure='$UnitMeasure
                 echo 'WXService='$WXService
                 echo 'aviationwx="'"$aviationwx"'"'
@@ -1038,6 +1162,8 @@ vconfig ()
   else
     #Create a new config file with default values to get it to a basic running state
     { echo 'Interval=360'
+    	echo 'Long="0"'
+    	echo 'Lat="0"'
       echo 'UnitMeasure=1'
       echo 'WXService=2'
       echo 'aviationwx="Disabled"'
@@ -1058,6 +1184,8 @@ saveconfig()
 {
 
    { echo 'Interval='$Interval
+     echo 'Long="'"$Long"'"'
+     echo 'Lat="'"$Lat"'"'
      echo 'UnitMeasure='$UnitMeasure
      echo 'WXService='$WXService
      echo 'aviationwx="'"$aviationwx"'"'
@@ -1465,6 +1593,14 @@ FWBUILD="${FWVER}.${BUILDNO}_${EXTENDNO}"
 # Create the necessary folder/file structure for wxmon under /jffs/addons
 if [ ! -d "/jffs/addons/wxmon.d" ]; then
   mkdir -p "/jffs/addons/wxmon.d"
+fi
+
+# Check for an AMTM Auto Update
+if [ "$1" = "amtmupdate" ]
+then
+    shift
+    ScriptUpdateFromAMTM "$@"
+    exit "$?"
 fi
 
 # Check and see if any commandline option is being used

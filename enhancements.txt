@@ -6,4 +6,5 @@ TO-DO:
 * Possibly add email/text alerts for weather alerts that affect the routers immediate vicinity
 
 DONE:
+* @kriukas: Add manual geolocation to get more accuracy for location in instances where ISP misreports IP location.
 * How about fancy weather graphics! 

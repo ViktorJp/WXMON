@@ -1,3 +1,15 @@
+v2.2.0   - (April 17, 2026)
+         - MINOR: Added the ability to use custom latitude and longitude coordinates for those who's IP address location lookup is not
+           providing the most accurate location. This option is now available under the setup/configuration menu. Thanks to @kriukas for
+           reporting and suggesting this! 
+         - PATCH: Diving into why the new version of SCREEN (v5.0.1) didn't want to start from a script in the post-mount, found that
+           some SCREEN environment variables weren't being set. Thanks to some input from @Martinski, these variables can be included in
+           the script, instead of adding these to the top of the post-mount.
+         - PATCH: Added "unset LD_LIBRARY_PATH" statement due to the latest Entware binaries using the RUNPATH embedded library search
+           path mechanism instead of the previous RPATH method. RUNPATH is searched *AFTER* the LD_LIBRARY_PATH definitions, whereas RPATH
+           has higher priority than the LD_LIBRARY_PATH environment variable, so it's searched FIRST. Thanks to @Martinski for his advice.
+         - PATCH: Made WXMON compliant with the amtmupdate functionality to allow for autoupdates through AMTM.
+
 v2.1.1   - (July 3, 2025)
          - MAJOR: Gave WXMON the major interface update treatment present in VPNMON-R3, RTRMON, BACKUPMON and TAILMON. It's important to
            me to have consistency of design across all my apps and ensure similar functionality.
