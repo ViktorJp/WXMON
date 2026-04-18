@@ -952,55 +952,6 @@ vconfig ()
                   fi
               fi
             ;;
-            
-#            2) #---------------------------------------------------------------------------------
-#              if [ "$Long" == "0" ] || [ "$Long" == "" ] && [ "$Lat" == "0" ] || [ "$Lat" == "" ]; then
-#              	LongLatDisp="${CDkGray}OFF"
-#              else
-#                LongLatDisp="${CGreen}$Long,$Lat"
-#              fi
-#              
-#              clear
-#              echo -e "${InvGreen} ${InvDkGray}${CWhite} Manual Location Coordinates                                                           ${CClear}"
-#              echo -e "${InvGreen} ${CClear}"
-#              echo -e "${InvGreen} ${CClear} Please indicate below if you would rather use your own longitude and latitude ather${CClear}"
-#              echo -e "${InvGreen} ${CClear} weather coordinates? Normally, WXMON will find your approximate location by using${CClear}"
-#              echo -e "${InvGreen} ${CClear} the nearest location based on your WAN IP address. Sometimes this is not accurate.${CClear}"
-#              echo -e "${InvGreen} ${CClear}"
-#              echo -e "${InvGreen} ${CClear} (Default = OFF)${CClear}"
-#              echo -e "${InvGreen} ${CClear}${CDkGray}---------------------------------------------------------------------------------------${CClear}"
-#              echo
-#              echo -e "${CClear}Current Coordinates (Long/Lat): ${CGreen}$LongLatDisp${CClear}" ; echo
-#              read -p "Please enter Longitude value (ex: -117.9698)? (0=off, e=Exit): " Long1
-#
-#              if [ "$Long1" = "e" ]
-#              then
-#                  echo -e "\n[Exiting]"; sleep 2
-#              elif [ "$Long1" = "0" ]
-#              then
-#              	  Long=0
-#              	  Lat=0
-#              	  saveconfig
-#              else
-#	              echo ""
-#	              read -p "Please enter Latitude value (ex: 38.3364)? (0=off, e=Exit): " Lat1
-#	
-#	              if [ "$Lat1" = "e" ]
-#	              then
-#	                  echo -e "\n[Exiting]"; sleep 2
-#	              elif [ "$Lat1" = "0" ]
-#	              then
-#	              	  Long=0
-#	              	  Lat=0
-#	              	  saveconfig
-#	              else 
-#	                  Long="$Long1"
-#	                  Lat="$Lat1"
-#	                  echo -e "$(date +'%b %d %Y %X') $(_GetLAN_HostName_) WXMON[$$] - INFO: New Long/Lat Location Configured: $Long,$Lat" >> $logfile
-#	                  saveconfig
-#	              fi
-#              fi
-#            ;;
 
             3) # -----------------------------------------------------------------------------------------
               clear
